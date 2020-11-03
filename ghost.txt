@@ -1,0 +1,180 @@
+struct ghost_rom
+{
+	created:timestamp; // date created // used to have a unique ID
+	name:string; // NFT name
+	description:string; // NFT description
+	imageURI:string; // NFT image // ipfs hash
+	creator:address; // NFT original owner
+	royalty:number; // commission %
+	edition_id:number; // NFT series
+	edition_number:number; // ID in specific NFT series
+}
+
+struct ghost_ram
+{
+
+}
+
+struct ghost_contract 
+{
+	edition_max:number // max qty per NFT series
+	infused_asset:string // asset symbol // array?
+	infused_amount:number //  asset amount // array?
+	extended:string // json format?
+	tokenURI:string // external API for extended metadata
+}
+
+token ghost {
+	global _owner: address;	// set global var to owner address
+	global _contractAddress: address = $THIS_ADDRESS; // set global var to contract address
+
+	property name: string = "GhostMarket";	
+	property symbol: string = "GHOST";
+
+    property isTransferable: bool = true;
+	property isFungible: bool = false;
+	property isFinite: bool = false;
+    property isDivisible: bool = false;
+	property isFuel: bool = false;
+	property isStakable: bool = false;
+    property isFiat: bool = false;
+	property isForeign: bool = false;
+	property isBurnable: bool = true;
+	property maxSupply: number = 0;
+	property getOwner: address = _owner;
+
+	import Runtime;
+	import Token;
+
+	constructor(owner:address) 
+	{
+		_owner:= owner;
+	}
+
+	public updateOwner(from:address, newOwner:address)
+	{
+		// check is witness & is current owner
+		Runtime.expect(Runtime.isWitness(_owner), "invalid witness");
+
+		// check new owner address length
+		Runtime.expect(newOwner.Length == 47 && newOwner.startsWith("P"), "invalid address format");
+
+		// set new owner
+		_owner:= newOwner
+
+	}
+
+	public mintToken()
+	{
+		// check is witness
+		Runtime.expect(Runtime.isWitness(_owner), "invalid witness");
+
+		// check mint maximum limit
+		Runtime.expect(this.checkMintLimit(edition_number, ghost_contract.edition_max), "mint limit reached for this series)
+
+		// MINT
+		// if infused check enough to infuse
+	}
+
+	public mintTokenBatch()
+	{
+		// check is witness
+		Runtime.expect(Runtime.isWitness(_owner), "invalid witness");
+
+		// check mint maximum limit
+		Runtime.expect(this.checkMintLimit(edition_number, ghost_contract.edition_max), "mint limit reached for this series)
+
+		// MINT
+		// if infused check enough to infuse
+	}
+
+	private checkMintLimit(edition_number:number, edition_max:number)
+	{
+		// check mint maximum limit
+		if (edition_number < edition_max)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	trigger onMint(from:address, to:address, symbol:string, amount:number) 
+	{
+		if (rom.infused_amount > 0)
+		{
+			// transfer from owner to contract address
+			Token.transfer(_owner, _contractAddress, rom.infused_asset, rom.infused_mount);
+		}
+	}
+	
+	trigger onBurn(from:address, to:address, symbol:string, amount:number) 
+	{
+		if (rom.infused_amount > 0)
+		{
+			// transfer from contract address to owner
+			Token.transfer(_contractAddress, _owner, rom.infused_asset, rom.infused_mount);
+		}
+	}			
+
+	/*trigger onSend(from:address, to:address, symbol:string, amount:number) 
+	{
+	
+	}*/	
+
+	/*trigger onReceive(from:address, to:address, symbol:string, amount:number) 
+	{
+    
+	}*/	
+
+	nft ghost_nft<ghost_rom, ghost_ram> {
+
+		property created: timestamp {
+			return rom.created;
+		}
+
+		property name: string {
+			return rom.name;
+		}
+
+		property description: string {
+			return rom.description;
+		}
+
+		property imageURI: string {
+			return rom.imageURI;
+		}
+
+		property creator: address {
+			return rom.creator;
+		}
+
+		property royalty: number {
+			return rom.royalty;
+		}
+
+		property edition_id: number {
+			return rom.edition_id;
+		}
+
+		property edition_number: number {
+			return rom.edition_number;
+		}
+
+		property infused_asset: string {
+			return rom.infused_asset;
+		}
+
+		property infused_amount: number {
+			return rom.infused_amount;
+		}
+
+		property extended: string {
+			return rom.extended;
+		}
+
+		property tokenURI: string {
+			return rom.tokenURI;
+		}
+
+	}
+}
