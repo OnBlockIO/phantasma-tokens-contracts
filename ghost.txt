@@ -37,13 +37,13 @@ token ghost {
 	property name: string = "GhostMarket";
 	property symbol: string = "GHOST";
 
-    property isTransferable: bool = true;
+  property isTransferable: bool = true;
 	property isFungible: bool = false;
 	property isFinite: bool = false;
-    property isDivisible: bool = false;
+  property isDivisible: bool = false;
 	property isFuel: bool = false;
 	property isStakable: bool = false;
-    property isFiat: bool = false;
+  property isFiat: bool = false;
 	property isForeign: bool = false;
 	property isBurnable: bool = true;
 	property maxSupply: number = 0;
@@ -88,7 +88,7 @@ token ghost {
 		Runtime.expect(Runtime.isWitness(_owner), "invalid witness");
 
 		// set local var based on struct
-		local rom: ghost_rom := Struct.ghost_rom(Runtime.time, name, description, imageURI, creator, royalty, edition_id);
+		local rom: ghost_rom := Struct.ghost_rom(Runtime.time, name, description, imageURI, creator, royalty, edition_id, infused_asset, infused_amount);
 
 		// check mint maximum limit
 		if (_mint_info.has(rom.edition_id))
@@ -107,13 +107,6 @@ token ghost {
 
 			// update new mint number
 			_mint_info.set(rom.edition_id, mi);
-		}
-
-		// if NFT infused
-		if (infused_amount > 0)
-		{
-			NFT.mint(_owner, creator, symbol, rom, "")
-			NFT.transfer
 		}
 
 		// mint the NFT
