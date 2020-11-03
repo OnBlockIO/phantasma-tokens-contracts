@@ -31,13 +31,13 @@ token ghost {
 	property name: string = "GhostMarket";
 	property symbol: string = "GHOST";
 
-  property isTransferable: bool = true;
+    property isTransferable: bool = true;
 	property isFungible: bool = false;
 	property isFinite: bool = false;
-  property isDivisible: bool = false;
+    property isDivisible: bool = false;
 	property isFuel: bool = false;
 	property isStakable: bool = false;
-  property isFiat: bool = false;
+    property isFiat: bool = false;
 	property isForeign: bool = false;
 	property isBurnable: bool = true;
 	property maxSupply: number = 0;
@@ -76,6 +76,37 @@ token ghost {
 		// if infused check enough to infuse
 	}
 
+	public mintToken(name:string, description:string, imageURI:string, creator:address, royalty:number, edition_id:number)
+	{
+		// check is witness
+		Runtime.expect(Runtime.isWitness(_owner), "invalid witness");
+
+		// set local var based on struct
+		local rom: ghost_rom := Struct.ghost_rom(Runtime.time, name, description, imageURI, creator, royalty, edition_id);
+
+		// check mint maximum limit
+		if (_mint_info.has(rom.edition_id))
+		{
+			local mi:mint_edition_info := _mint_info.get(rom.edition_id);
+			mi.edition_number := mi.edition_number + 1;
+			Runtime.expect(this.checkMintLimit(mi.edition_number, mi.edition_max), "mint limit reached for this series")
+
+			// update new mint number
+			_mint_info.set(rom.edition_id, mi);
+		}
+		else
+		{
+			local mi:mint_edition_info = Struct.mint_edition_info(0, edition_max);
+
+			// update new mint number
+			_mint_info.set(rom.edition_id, mi);
+		}
+
+		// mint the nft
+		NFT.mint(_owner, creator, symbol, rom, "")
+		// if infused check enough to infuse and infuse
+	}
+
 	public mintTokenBatch()
 	{
 		// check is witness
@@ -84,7 +115,7 @@ token ghost {
 		// check mint maximum limit
 		Runtime.expect(this.checkMintLimit(edition_number, ghost_contract.edition_max), "mint limit reached for this series)
 
-		// MINT
+		// TODO
 		// if infused check enough to infuse
 	}
 
@@ -158,6 +189,10 @@ token ghost {
 
 		property edition_number: number {
 			return rom.edition_number;
+		}
+
+		property edition_max: number {
+			return rom.edition_max;
 		}
 
 		property infused_asset: string {
