@@ -15,7 +15,7 @@ struct ghost_ram
 
 }
 
-struct ghost_contract 
+struct ghost_contract
 {
 	edition_max:number // max qty per NFT series
 	infused_asset:string // asset symbol // array?
@@ -28,16 +28,16 @@ token ghost {
 	global _owner: address;	// set global var to owner address
 	global _contractAddress: address = $THIS_ADDRESS; // set global var to contract address
 
-	property name: string = "GhostMarket";	
+	property name: string = "GhostMarket";
 	property symbol: string = "GHOST";
 
-    property isTransferable: bool = true;
+  property isTransferable: bool = true;
 	property isFungible: bool = false;
 	property isFinite: bool = false;
-    property isDivisible: bool = false;
+  property isDivisible: bool = false;
 	property isFuel: bool = false;
 	property isStakable: bool = false;
-    property isFiat: bool = false;
+  property isFiat: bool = false;
 	property isForeign: bool = false;
 	property isBurnable: bool = true;
 	property maxSupply: number = 0;
@@ -46,7 +46,7 @@ token ghost {
 	import Runtime;
 	import Token;
 
-	constructor(owner:address) 
+	constructor(owner:address)
 	{
 		_owner:= owner;
 	}
@@ -98,7 +98,7 @@ token ghost {
 		return true;
 	}
 
-	trigger onMint(from:address, to:address, symbol:string, amount:number) 
+	trigger onMint(from:address, to:address, symbol:string, amount:number)
 	{
 		if (rom.infused_amount > 0)
 		{
@@ -106,25 +106,25 @@ token ghost {
 			Token.transfer(_owner, _contractAddress, rom.infused_asset, rom.infused_mount);
 		}
 	}
-	
-	trigger onBurn(from:address, to:address, symbol:string, amount:number) 
+
+	trigger onBurn(from:address, to:address, symbol:string, amount:number)
 	{
 		if (rom.infused_amount > 0)
 		{
 			// transfer from contract address to owner
 			Token.transfer(_contractAddress, _owner, rom.infused_asset, rom.infused_mount);
 		}
-	}			
+	}
 
-	/*trigger onSend(from:address, to:address, symbol:string, amount:number) 
+	/*trigger onSend(from:address, to:address, symbol:string, amount:number)
 	{
-	
-	}*/	
 
-	/*trigger onReceive(from:address, to:address, symbol:string, amount:number) 
+	}*/
+
+	/*trigger onReceive(from:address, to:address, symbol:string, amount:number)
 	{
-    
-	}*/	
+
+	}*/
 
 	nft ghost_nft<ghost_rom, ghost_ram> {
 
