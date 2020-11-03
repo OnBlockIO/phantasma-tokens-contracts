@@ -17,16 +17,22 @@ struct ghost_ram
 
 struct ghost_contract
 {
-	edition_max:number // max qty per NFT series
 	infused_asset:string // asset symbol // array?
 	infused_amount:number //  asset amount // array?
 	extended:string // json format?
 	tokenURI:string // external API for extended metadata
 }
 
+struct mint_edition_info {
+    edition_num: number; // max qty per NFT series
+    edition_max: number;
+}
+
+
 token ghost {
 	global _owner: address;	// set global var to owner address
 	global _contractAddress: address = $THIS_ADDRESS; // set global var to contract address
+	global _mint_info:storage_map<number, mint_edition_info>; // set global var for nft editions
 
 	property name: string = "GhostMarket";
 	property symbol: string = "GHOST";
@@ -76,7 +82,7 @@ token ghost {
 		// if infused check enough to infuse
 	}
 
-	public mintToken(name:string, description:string, imageURI:string, creator:address, royalty:number, edition_id:number)
+	public mintToken(name:string, description:string, imageURI:string, creator:address, royalty:number, edition_id:number, infused_asset:string, infused_amount:number)
 	{
 		// check is witness
 		Runtime.expect(Runtime.isWitness(_owner), "invalid witness");
@@ -89,6 +95,7 @@ token ghost {
 		{
 			local mi:mint_edition_info := _mint_info.get(rom.edition_id);
 			mi.edition_number := mi.edition_number + 1;
+			// check if series max reached
 			Runtime.expect(this.checkMintLimit(mi.edition_number, mi.edition_max), "mint limit reached for this series")
 
 			// update new mint number
@@ -102,9 +109,16 @@ token ghost {
 			_mint_info.set(rom.edition_id, mi);
 		}
 
-		// mint the nft
+		// if NFT infused
+		if (infused_amount > 0)
+		{
+			NFT.mint(_owner, creator, symbol, rom, "")
+			NFT.transfer
+		}
+
+		// mint the NFT
 		NFT.mint(_owner, creator, symbol, rom, "")
-		// if infused check enough to infuse and infuse
+
 	}
 
 	public mintTokenBatch()
