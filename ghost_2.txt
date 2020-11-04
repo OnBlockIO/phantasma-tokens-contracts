@@ -1,5 +1,5 @@
 /**
- * GHOSTMARKET PHANTASMA SMART CONTRACT - VERSION 1.0.0
+ * GHOSTMARKET PHANTASMA SMART CONTRACT - VERSION 1.0
  */
 
  /*
@@ -64,6 +64,7 @@ token ghost {
 	property isBurnable:bool = true;		// is burnable
 	property maxSupply:number = 0;			// has no max supply
 	property getOwner:address = _owner;
+	property getVersion:string = "1.0";
 
 	import Runtime;
 	import Token;
