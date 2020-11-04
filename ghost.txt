@@ -8,6 +8,8 @@ struct ghost_rom
 	royalty:number; // commission %
 	edition_id:number; // NFT series
 	edition_number:number; // ID in specific NFT series
+	infused_asset:string // asset symbol // array?
+	infused_amount:number //  asset amount // array?
 }
 
 struct ghost_ram
@@ -15,24 +17,21 @@ struct ghost_ram
 
 }
 
-struct ghost_contract
+struct ghost_contract // where can we fit all that?
 {
-	infused_asset:string // asset symbol // array?
-	infused_amount:number //  asset amount // array?
 	extended:string // json format?
 	tokenURI:string // external API for extended metadata
 }
 
 struct mint_edition_info {
-    edition_num: number; // max qty per NFT series
-    edition_max: number;
+    edition_num: number; // edition series number
+    edition_max: number; // max qty per NFT series
 }
 
-
 token ghost {
-	global _owner: address;	// set global var to owner address
-	global _contractAddress: address = $THIS_ADDRESS; // set global var to contract address
-	global _mint_info:storage_map<number, mint_edition_info>; // set global var for nft editions
+	global _owner: address;	// global storage for owner address
+	global _contractAddress: address = $THIS_ADDRESS; // global storage for contract address
+	global _mint_info:storage_map<number, mint_edition_info>; // global storage for nft editions
 
 	property name: string = "GhostMarket";
 	property symbol: string = "GHOST";
@@ -63,29 +62,41 @@ token ghost {
 		Runtime.expect(Runtime.isWitness(_owner), "invalid witness");
 
 		// check new owner address length
-		Runtime.expect(newOwner.Length == 47 && newOwner.startsWith("P"), "invalid address format");
+		Runtime.expect(newOwner.Length == 47 && newOwner.startsWith("P"), "invalid address format for newOwner");
 
 		// set new owner
 		_owner:= newOwner
 
 	}
 
-	public mintToken()
+	public mintToken(name:string, description:string, imageURI:string, creator:address, royalty:number, edition_id:number, edition_max:number, infused_asset:string, infused_amount:number)
 	{
 		// check is witness
 		Runtime.expect(Runtime.isWitness(_owner), "invalid witness");
 
-		// check mint maximum limit
-		Runtime.expect(this.checkMintLimit(edition_number, ghost_contract.edition_max), "mint limit reached for this series)
+		// validate name parameter
+		Runtime.expect(name.Length >= 5 && name.Length <= 30, "invalid name length");
 
-		// MINT
-		// if infused check enough to infuse
-	}
+		// validate description parameter
+		Runtime.expect(description.Length >= 10 && description.Length <= 350, "invalid description length");
 
-	public mintToken(name:string, description:string, imageURI:string, creator:address, royalty:number, edition_id:number, infused_asset:string, infused_amount:number)
-	{
-		// check is witness
-		Runtime.expect(Runtime.isWitness(_owner), "invalid witness");
+		// validate imageURI parameter
+		Runtime.expect(imageURI.Length >= 0, "invalid imageURI length");
+
+		// validate creator parameter
+		Runtime.expect(creator.Length == 47 && creator.startsWith("P"), "invalid address format for creator");
+
+		// validate royalty parameter
+		Runtime.expect(royalty >= 0 && royalty <= 100, "invalid number for royalties, it has to be between 0 and 100");
+
+		// validate edition_id parameter
+		Runtime.expect(edition_id > 0, "invalid number for edition_id, it has to be > 0");
+
+		// validate edition_max parameter
+		Runtime.expect(edition_max > 0, "invalid number for edition_max, it has to be > 0");
+
+		// validate infused_amount parameter
+		Runtime.expect(infused_amount >= 0, "invalid number for infused_amount, it has to be >= 0");
 
 		// set local var based on struct
 		local rom: ghost_rom := Struct.ghost_rom(Runtime.time, name, description, imageURI, creator, royalty, edition_id, infused_asset, infused_amount);
@@ -112,18 +123,6 @@ token ghost {
 		// mint the NFT
 		NFT.mint(_owner, creator, symbol, rom, "")
 
-	}
-
-	public mintTokenBatch()
-	{
-		// check is witness
-		Runtime.expect(Runtime.isWitness(_owner), "invalid witness");
-
-		// check mint maximum limit
-		Runtime.expect(this.checkMintLimit(edition_number, ghost_contract.edition_max), "mint limit reached for this series)
-
-		// TODO
-		// if infused check enough to infuse
 	}
 
 	private checkMintLimit(edition_number:number, edition_max:number)
