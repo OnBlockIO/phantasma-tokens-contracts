@@ -1,0 +1,267 @@
+/**
+ * GHOSTMARKET PHANTASMA SMART CONTRACT - VERSION 1.0.0
+ */
+
+ /*
+  Most data stored on contract storage. Can be done like this?
+  Pros:
+   + less storage used
+   + low rom usage
+   + extended properties could be stored on chain
+  Cons:
+   + slower for getting nft properties (access not optmized)
+
+ */
+
+struct ghost_rom
+{
+	edition_id:number; 		// NFT series
+	edition_number:number; 	// ID in specific NFT series
+	created:timestamp; 		// date created // used to have a unique ID
+}
+
+struct ghost_ram
+{
+
+}
+
+struct series_info {
+	edition_number: number;			// ID in specific NFT series
+	edition_max: number; 			// Max mint limit per NFT series
+	name: string; 					// NFT name
+	description:string; 			// NFT description
+	imageURI:string; 				// NFT image // ipfs hash
+	creator:address; 				// NFT original owner
+	royalty:number; 				// commission %
+	infused_asset:string 			// asset symbol // array?
+	infused_amount:number 			// asset amount // array?
+	tokenURI:string; 				// Token URI for extended properties
+	extended:extended_properties;
+}
+
+struct extended_properties
+{
+
+}
+
+token ghost {
+	global _owner:address;									// global storage for owner address
+	global _contractAddress:address = $THIS_ADDRESS; 		// global storage for contract address
+	global _series_map:storage_map<number, series_info>; 	// global storage for nft editions
+	global _paused:bool = false; 							// global storage for contract pause
+
+	property name: string = "GhostMarket";
+	property symbol: string = "GHOST";
+
+  property isTransferable:bool = true;	// is transferable
+	property isFungible:bool = false;		// is not fungible
+	property isFinite:bool = false;
+  property isDivisible:bool = false;
+	property isFuel:bool = false;
+	property isStakable:bool = false;
+  property isFiat:bool = false;
+	property isForeign:bool = false;
+	property isBurnable:bool = true;		// is burnable
+	property maxSupply:number = 0;			// has no max supply
+	property getOwner:address = _owner;
+
+	import Runtime;
+	import Token;
+
+	constructor(owner:address)
+	{
+		_owner:= owner;
+	}
+
+	public updateOwner(from:address, newOwner:address)
+	{
+		// check is witness & is current owner
+		Runtime.expect(Runtime.isWitness(_owner), "invalid witness or not current owner");
+
+		// check new owner address length
+		Runtime.expect(newOwner.Length == 47 && newOwner.startsWith("P"), "invalid address format for newOwner");
+
+		// set new owner
+		_owner:= newOwner
+	}
+
+	public updatePause(from:address, pause:bool)
+	{
+		// check is witness & is current owner
+		Runtime.expect(Runtime.isWitness(_owner), "invalid witness or not current owner");
+
+		// set new status
+		_pause:= pause
+	}
+
+	public mintToken(edition_id:number, edition_max:number, num_of_nfts: number, name:string, description:string, imageURI:string, creator:address, royalty:number, infused_asset:string, infused_amount:number, tokenURI:string)
+	{
+		// check is witness
+		Runtime.expect(Runtime.isWitness(creator), "invalid witness");
+
+		// validate edition_id parameter
+		Runtime.expect(edition_id > 0, "invalid number for edition_id, it has to be > 0");
+
+		// validate edition_max parameter
+		Runtime.expect(edition_max >= 0, "invalid number for edition_max, it has to be >= 0");
+
+		// validate num_of_nfts parameter
+		Runtime.expect(num_of_nfts > 0, "invalid number for edition_max, it has to be > 0");
+
+		// validate name parameter
+		Runtime.expect(name.Length >= 5 && name.Length <= 30, "invalid name length");
+
+		// validate description parameter // reduce description length?
+		Runtime.expect(description.Length >= 10 && description.Length <= 100, "invalid description length");
+
+		// validate imageURI parameter
+		Runtime.expect(imageURI.Length >= 0, "invalid imageURI length");
+
+		// validate creator parameter
+		Runtime.expect(creator.Length == 47 && creator.startsWith("P"), "invalid address format for creator");
+
+		// validate royalty parameter
+		Runtime.expect(royalty >= 0 && royalty <= 100, "invalid number for royalties, it has to be between 0 and 100");
+
+		// validate infused_asset parameter	// add check if token exists? // allow array?
+		Runtime.expect(infused_asset.Length >= 0, "invalid infused_asset length");
+
+		// validate infused_amount parameter // allow array?
+		Runtime.expect(infused_amount >= 0, "invalid number for infused_amount, it has to be >= 0");
+
+		// validate tokenURI parameter
+		Runtime.expect(tokenURI.Length >= 0, "invalid tokenURI length");
+
+		// check if series already exist
+		if (!_series_map.has(edition_id))	// check proper way to check Map.has()
+		{
+			this.createSeries(edition_id, edition_max, name, description, imageURI, creator, royalty, infused_asset, infused_amount, tokenURI)
+		}
+		this.mintSeries(edition_id, num_of_nfts)
+	}
+
+	public createSeries(edition_id:number, edition_max:number, name:string, description:string, imageURI:string, creator:address, royalty:number, infused_asset:number, infused_amount:number, tokenURI:string)
+	{
+		// local var for series_info
+		local info:series_info := Struct.series_info(0, edition_max, name, description, imageURI, creator, royalty, infused_asset, infused_amount, tokenURI);
+
+		// check if series exists
+		Runtime.expect(!_series_map.has(edition_id), "this series has already been created");	// check proper way to check Map.has()
+
+		// create new series in storage
+		_series_map.set(edition_id, series_info);
+	}
+
+	public mintSeries(edition_id: number, num_of_nfts: number)
+	{
+		// local var for mint loop
+		local index:number := 0;
+		// local var for edition_id storage map
+		local info:mint_edition_info := _series_map.get(rom.edition_id);
+		// local var for ghost_rom storage map
+		local rom: ghost_rom := Struct.ghost_rom(edition_id, info.edition_number, Runtime.time);
+
+		// set new edition number count based on new nft created
+		info.edition_number := info.edition_number + num_of_nfts;
+
+		// check if series max reached
+		Runtime.expect(this.checkMintLimit(mi.edition_number, mi.edition_max), "mint limit already exceeded for this series")
+
+		// update new mint number
+		_series_map.set(rom.edition_id, info);
+
+		// mint all new nfts
+		while (index < num_of_nfts) {
+			rom.edition_number := rom.edition_number + 1
+			NFT.mint(_owner, creator, symbol, rom, "");
+			index := index + 1;
+		}
+	}
+
+	private checkMintLimit(edition_number:number, edition_max:number)
+	{
+		// check if edition mint maximum limit reached
+		if (edition_max > 0 && edition_number <= edition_max)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	trigger onMint(from:address, to:address, symbol:string, amount:number, nft:ghost_nft)
+	{
+		// check if nft infused
+    local info: series_info := _series_map.get(rom.edition_id);
+		if (info.infused_amount > 0)
+		{
+			// transfer from owner to contract address
+			Token.transfer(_owner, _contractAddress, info.infused_asset, info.infused_mount);
+		}
+	}
+
+	trigger onBurn(from:address, to:address, symbol:string, amount:number, nft:ghost_nft)
+	{
+		// check if nft infused
+    local info: series_info := _series_map.get(rom.edition_id);
+		if (rom.infused_amount > 0)
+		{
+			// transfer from contract address to owner
+			Token.transfer(_contractAddress, _owner, info.infused_asset, info.infused_mount);
+		}
+	}
+
+	nft ghost_nft<ghost_rom, ghost_ram> {
+
+		property edition_id: number {
+			return rom.edition_id;
+		}
+
+		property edition_number: number {
+			return rom.edition_number;
+		}
+
+		property edition_max: number {
+			return _series_map.get(rom.edition_id).edition_max;
+		}
+
+		property created: timestamp {
+			return rom.created;
+		}
+
+    property name: string {
+			return _series_map.get(rom.edition_id).name;
+		}
+
+		property description: string {
+			return _series_map.get(rom.edition_id).description;
+		}
+
+		property imageURI: string {
+			return _series_map.get(rom.edition_id).imageURI;
+		}
+
+    property creator: address {
+			return _series_map.get(rom.edition_id).creator;
+		}
+
+		property royalty: number {
+			return _series_map.get(rom.edition_id).royalty;
+		}
+
+    property infused_asset: string {
+			return _series_map.get(rom.edition_id).infused_asset;
+		}
+
+		property infused_amount: number {
+			return _series_map.get(rom.edition_id).infused_amount;
+		}
+
+    property extended: string {
+			return _series_map.get(rom.edition_id).extended;
+		}
+
+		property tokenURI: string {
+			return _series_map.get(rom.edition_id).tokenURI;
+		}
+	}
+}
