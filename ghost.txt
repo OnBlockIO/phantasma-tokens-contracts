@@ -77,8 +77,8 @@ token ghost {
 		// validate name parameter
 		Runtime.expect(name.Length >= 5 && name.Length <= 30, "invalid name length");
 
-		// validate description parameter
-		Runtime.expect(description.Length >= 10 && description.Length <= 350, "invalid description length");
+		// validate description parameter // reduce description length?
+		Runtime.expect(description.Length >= 10 && description.Length <= 100, "invalid description length");
 
 		// validate imageURI parameter
 		Runtime.expect(imageURI.Length >= 0, "invalid imageURI length");
@@ -93,7 +93,10 @@ token ghost {
 		Runtime.expect(edition_id > 0, "invalid number for edition_id, it has to be > 0");
 
 		// validate edition_max parameter
-		Runtime.expect(edition_max > 0, "invalid number for edition_max, it has to be > 0");
+		Runtime.expect(edition_max >= 0, "invalid number for edition_max, it has to be >= 0");
+
+		// validate infused_asset parameter	// add check if token exists?
+		Runtime.expect(infused_asset.Length >= 0, "invalid infused_asset length");
 
 		// validate infused_amount parameter
 		Runtime.expect(infused_amount >= 0, "invalid number for infused_amount, it has to be >= 0");
@@ -127,8 +130,8 @@ token ghost {
 
 	private checkMintLimit(edition_number:number, edition_max:number)
 	{
-		// check mint maximum limit
-		if (edition_number < edition_max)
+		// check mint maximum limit <= mint count
+		if (edition_number <= edition_max)
 		{
 			return false;
 		}
