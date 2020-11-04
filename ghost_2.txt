@@ -52,6 +52,7 @@ token ghost {
 
 	property name: string = "GhostMarket";
 	property symbol: string = "GHOST";
+  property version: string = "1.0";
 
   property isTransferable:bool = true;	// is transferable
 	property isFungible:bool = false;		// is not fungible
@@ -64,7 +65,6 @@ token ghost {
 	property isBurnable:bool = true;		// is burnable
 	property maxSupply:number = 0;			// has no max supply
 	property getOwner:address = _owner;
-	property getVersion:string = "1.0";
 
 	import Runtime;
 	import Token;
@@ -106,6 +106,9 @@ token ghost {
 
 	public mintToken(edition_id:number, edition_max:number, num_of_nfts: number, name:string, description:string, imageURI:string, creator:address, royalty:number, infused_asset:string, infused_amount:number, tokenURI:string)
 	{
+    // check if contract is active
+    Runtime.expect(!this.checkContractPaused(), "contract is currently paused");
+
 		// check is witness
 		Runtime.expect(Runtime.isWitness(creator), "invalid witness");
 
@@ -133,8 +136,8 @@ token ghost {
 		// validate royalty parameter
 		Runtime.expect(royalty >= 0 && royalty <= 100, "invalid number for royalties, it has to be between 0 and 100");
 
-		// validate infused_asset parameter	// add check if token exists? // allow array?
-		Runtime.expect(infused_asset.Length >= 0, "invalid infused_asset length");
+    // validate infused_asset parameter // allow array?
+		Runtime.expect(Runtime.tokenExists(infused_asset), "infused_asset is not a valid token");
 
 		// validate infused_amount parameter // allow array?
 		Runtime.expect(infused_amount >= 0, "invalid number for infused_amount, it has to be >= 0");
@@ -152,6 +155,9 @@ token ghost {
 
 	public createSeries(edition_id:number, edition_max:number, name:string, description:string, imageURI:string, creator:address, royalty:number, infused_asset:number, infused_amount:number, tokenURI:string)
 	{
+    // check if contract is active
+    Runtime.expect(!this.checkContractPaused(), "contract is currently paused");
+
 		// local var for series_info
 		local info:series_info := Struct.series_info(0, edition_max, name, description, imageURI, creator, royalty, infused_asset, infused_amount, tokenURI);
 
@@ -164,10 +170,15 @@ token ghost {
 
 	public mintSeries(edition_id: number, num_of_nfts: number)
 	{
+    // check if contract is active
+    Runtime.expect(!this.checkContractPaused(), "contract is currently paused");
+
 		// local var for mint loop
 		local index:number := 0;
+
 		// local var for edition_id storage map
 		local info:mint_edition_info := _series_map.get(rom.edition_id);
+
 		// local var for ghost_rom storage map
 		local rom: ghost_rom := Struct.ghost_rom(edition_id, info.edition_number, Runtime.time);
 
@@ -197,6 +208,16 @@ token ghost {
 		}
 		return true;
 	}
+
+  private checkContractPaused()
+  {
+    // check if contract is paused
+    if (_paused)
+    {
+      return true;
+    }
+    return false;
+  }
 
 	trigger onMint(from:address, to:address, symbol:string, amount:number, nft:ghost_nft)
 	{
