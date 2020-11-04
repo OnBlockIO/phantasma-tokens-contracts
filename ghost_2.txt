@@ -94,6 +94,15 @@ token ghost {
 		_pause:= pause
 	}
 
+  public upgradeContract(from:address, script:bytes)
+  {
+    // check is witness & is current owner
+    Runtime.expect(Runtime.isWitness(_owner), "invalid witness or not current owner");
+
+    // upgrade contract
+    Runtime.upgradeContract(contract, script)
+  }
+
 	public mintToken(edition_id:number, edition_max:number, num_of_nfts: number, name:string, description:string, imageURI:string, creator:address, royalty:number, infused_asset:string, infused_amount:number, tokenURI:string)
 	{
 		// check is witness
