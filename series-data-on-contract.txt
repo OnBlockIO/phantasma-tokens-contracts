@@ -1,0 +1,181 @@
+/*
+ Most data stored on contract storage. Can be done like this?
+ Pros:
+  + less storage used
+  + low rom usage
+  + extended properties could be stored on chain
+ Cons:
+  + slower for getting nft properties (access not optmized)
+
+*/
+
+struct ghost_rom
+{
+	created:timestamp; // date created // used to have a unique ID
+	edition_id:number; // NFT series
+	edition_number:number; // ID in specific NFT series
+}
+
+struct ghost_ram
+{
+
+}
+
+struct series_info {
+    edition_num: number;  // current number of nft minted
+    edition_max: number;  // max qty per NFT series
+	name: string;
+	name:string; // NFT name
+	description:string; // NFT description
+	imageURI:string; // NFT image // ipfs hash
+	creator:address; // NFT original owner
+	royalty:number; // commission %
+	infused_asset:string; // asset symbol // array?
+	infused_amount:number; //  asset amount // array?
+	extended: extended_properties;
+}
+
+struct extended_properties {
+
+}
+
+
+token ghost {	
+	global series_map:storage_map<number, series_info>; // set global var for nft editions
+
+	property name: string = "GhostMarket";
+	property symbol: string = "GHOST";
+
+	import Runtime;
+	import Token;
+
+	constructor(owner:address)
+	{
+		_owner:= owner;
+	}
+
+	public createSeries(edition_id: number, edition_max_num: number, name: string, description: string, imageURI: string, creator: address, royalty: number, infused_asset: number, infused_amount: number)
+	{
+		local info: series_info := Struct.series_info(0, edition_max, name, description, imageURI, creator, royalty, infused_asset, infused_amount);
+
+		Runtime.expect(!series_map.has(edition_id), "series already created");   // check missing Map.has()
+
+		series_map.set(edition_id, series_info);
+	}
+
+	public mintSeries(edition_id: number, num_of_nfts: number) {
+		local index:number := 0;
+		local info:mint_edition_info := series_map.get(rom.edition_id);
+		local rom: ghost_rom := Struct.ghost_rom(Runtime.time, edition_id, info.edition_num);
+
+		info.edition_num := info.edition_num + num_of_nfts;
+
+		// check if series max reached
+		Runtime.expect(this.checkMintLimit(mi.edition_number, mi.edition_max), "mint limit would be exceeded for this series")
+
+		// update new mint number
+		series_map.set(rom.edition_id, info);
+
+		// mint all nfts
+		while (index < num_of_nfts) {
+			rom.edition_num := rom.edition_num + 1
+			NFT.mint(_owner, creator, symbol, rom, "");
+			index := index + 1;
+		}
+	}
+
+	private checkMintLimit(edition_number:number, edition_max:number)
+	{
+		// check mint maximum limit
+		if (edition_max > 0 && edition_number < edition_max)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	trigger onMint(to:address, nft:ghost_nft)
+	{
+		local info: series_info := series_map.get(rom.edition_id);
+
+		if (info.infused_amount > 0)
+		{
+			// transfer from owner to contract address
+			Token.transfer(to, $THIS_ADDRESS, info.infused_asset, info.infused_amount);
+		}
+	}
+
+	trigger onBurn(from:address, nft:ghost_nft)
+	{
+		local info: series_info := series_map.get(rom.edition_id);
+
+		if (info.infused_amount > 0)
+		{
+			// transfer from contract address to owner
+			Token.transfer($THIS_ADDRESS, from, info.infused_asset, info.infused_amount);
+		}
+	}
+
+	trigger onSend(from:address, to:address, nft: ghost_nft)
+	{
+		if (from == MARKET_CONTRACT) {
+			// we cannot know if nft is bought or just recovered by the address listing it
+			// if we knew, we could handle royalties here
+		}
+	}
+
+	nft ghost_nft<ghost_rom, ghost_ram> {
+
+		property created: timestamp {
+			return rom.created;
+		}
+
+		property name: string {
+			return series_map.get(rom.edition_id).name;
+		}
+
+		property description: string {
+			return series_map.get(rom.edition_id).description;
+		}
+
+		property imageURI: string {
+			return series_map.get(rom.edition_id).imageURI;
+		}
+
+		property creator: address {
+			return series_map.get(rom.edition_id).creator;
+		}
+
+		property royalty: number {
+			return series_map.get(rom.edition_id).royalty;
+		}
+
+		property edition_id: number {
+			return rom.edition_id;
+		}
+
+		property edition_number: number {
+			return rom.edition_num;
+		}
+
+		property edition_max: number {
+			return series_map.get(rom.edition_id).edition_max;
+		}
+
+		property infused_asset: string {
+			return series_map.get(rom.edition_id).infused_asset;
+		}
+
+		property infused_amount: number {
+			return series_map.get(rom.edition_id).infused_amount;
+		}
+
+		property extended: string {
+			return series_map.get(rom.edition_id).extended;
+		}
+
+		property tokenURI: string {
+			return series_map.get(rom.edition_id).tokenURI;
+		}
+	}
+}
