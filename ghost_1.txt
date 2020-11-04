@@ -226,13 +226,28 @@ token ghost {
 		return false;
 	}
 
-	trigger onMint(from:address, to:address, symbol:string, amount:number)
+  trigger onMint(from:address, to:address, symbol:string, amount:number)
 	{
 		// check if nft infused
 		if (rom.infused_amount > 0)
 		{
-			// transfer from owner to contract address
-			Token.transfer(_owner, _contractAddress, rom.infused_asset, rom.infused_mount);
+			// local var for get token
+			local gettoken:= Runtime.getToken(rom.infused_asset);				// correct syntax?
+
+			// local var for fungibility
+			local fungible:bool = gettoken.Flags.HasFlag(TokenFlags.Fungible);	// correct syntax?
+
+			// if fungible
+			if (fungible)
+			{
+				// transfer ft from owner to contract
+				Token.transfer(_owner, _contractAddress, rom.infused_asset, rom.infused_amount);
+			}
+			else
+			{
+				// transfer nft from owner to contract
+				NFT.transfer(_owner, _contractAddress, rom.infused_asset, rom.infused_amount);
+			}
 		}
 	}
 
@@ -241,8 +256,23 @@ token ghost {
 		// check if nft infused
 		if (rom.infused_amount > 0)
 		{
-			// transfer from contract address to owner
-			Token.transfer(_contractAddress, _owner, rom.infused_asset, rom.infused_mount);
+			// local var for get token
+			local gettoken:= Runtime.getToken(rom.infused_asset);				// correct syntax?
+
+			// local var for fungibility
+			local fungible:bool = gettoken.Flags.HasFlag(TokenFlags.Fungible);	// correct syntax?
+
+			// if fungible
+			if (fungible)
+			{
+				// transfer ft from contract to owner
+				Token.transfer(_contractAddress, _owner, rom.infused_asset, rom.infused_amount);
+			}
+			else
+			{
+				// transfer nft from contract to owner
+				NFT.transfer(_contractAddress, _owner, rom.infused_asset, rom.infused_amount);
+			}
 		}
 	}
 
