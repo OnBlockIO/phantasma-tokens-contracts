@@ -107,6 +107,12 @@ token ghost {
   global _paused:bool = false;
   // global storage for fees multiplier
   global _feesMultiplier:number = 10;
+  // global storage for fees threshold1
+  global _feeThreshold1:number = 10;
+  // global storage for fees threshold2
+  global _feeThreshold1:number = 40;
+  // global storage for fees threshold3
+  global _feeThreshold1:number = 70;
 
   // token name
   property name: string = "GhostMarket";
@@ -127,6 +133,12 @@ token ghost {
 	property getOwner:address = _owner;
   // get current fees multiplier
   property getFeesMultiplier:number = _feesMultiplier;
+  // get current fees threshold1
+  property getFeesMultiplier:number = _feeThreshold1;
+  // get current fees threshold2
+  property getFeesMultiplier:number = _feeThreshold2;
+  // get current fees threshold2
+  property getFeesMultiplier:number = _feeThreshold3;
 
   // infuse events
   event InfuseEventMint:infuse_event_data = infuse_event_mint;
@@ -148,7 +160,8 @@ token ghost {
 	public updateOwner(from:address, newOwner:address)
 	{
 		// check is witness & is current owner
-		Runtime.expect(Runtime.isWitness(_owner), "invalid witness or not current owner");
+    Runtime.expect(from == _owner, "must be owner");
+    Runtime.expect(Runtime.isWitness(from), "invalid witness");
 
 		// check new owner address length
 		Runtime.expect(newOwner.Length == 47 && newOwner.startsWith("P"), "invalid address format for newOwner");
@@ -163,7 +176,8 @@ token ghost {
 	public updatePause(from:address, pause:bool)
 	{
 		// check is witness & is current owner
-		Runtime.expect(Runtime.isWitness(_owner), "invalid witness or not current owner");
+    Runtime.expect(from == _owner, "must be owner");
+    Runtime.expect(Runtime.isWitness(from), "invalid witness");
 
 		// set new status
 		_pause:= pause
@@ -175,7 +189,8 @@ token ghost {
   public upgradeContract(from:address, script:bytes)
   {
     // check is witness & is current owner
-    Runtime.expect(Runtime.isWitness(_owner), "invalid witness or not current owner");
+    Runtime.expect(from == _owner, "must be owner");
+    Runtime.expect(Runtime.isWitness(from), "invalid witness");
 
     // upgrade contract
     Runtime.upgradeContract(contract, script)
@@ -187,13 +202,45 @@ token ghost {
   public updateFees(from:address, feesMultiplier:number)
   {
     // check is witness & is current owner
-    Runtime.expect(Runtime.isWitness(_owner), "invalid witness or not current owner");
+    Runtime.expect(from == _owner, "must be owner");
+    Runtime.expect(Runtime.isWitness(from), "invalid witness");
 
     // check feesMultiplier parameter
     Runtime.expect(feesMultiplier > 0, "invalid number for feesMultiplier, it has to be > 0");
 
     // set fees
     _feesMultiplier:= feesMultiplier
+  }
+
+  /// @dev Update the current fees thresholds.
+  /// @param from - The address of the current owner.
+  /// @param feesThresholdIndex - Index of the threshold (1,2 or 3).
+  /// @param feesThresholdValue - Value of the specific threshold.
+  public updateFeesThresholds(from:address, feesThresholdIndex:number, feesThresholdValue:number)
+  {
+    // check is witness & is current owner
+    Runtime.expect(from == _owner, "must be owner");
+    Runtime.expect(Runtime.isWitness(from), "invalid witness");
+
+    // check feesThresholdIndex parameter
+    Runtime.expect(feesThresholdIndex == 1 || feesThresholdIndex == 2 || feesThresholdIndex == 3, "invalid number for feesThresholdIndex, it has to be 1,2 or 3");
+
+    // check feesThresholdValue parameter
+    Runtime.expect(feesThresholdValue > 0, "invalid number for feesThresholdValue, it has to be > 0");
+
+    // set fees
+    if (feesThresholdIndex == 1)
+    {
+        _feeThreshold1:= feesThresholdValue
+    }
+    if (feesThresholdIndex == 2)
+    {
+        _feeThreshold2:= feesThresholdValue
+    }
+    if (feesThresholdIndex == 3)
+    {
+        _feeThreshold3:= feesThresholdValue
+    }
   }
 
   /// @dev Mint a specific number of NFT on GhostMarket contract.
@@ -416,21 +463,21 @@ token ghost {
   /// @param num_of_nfts - Quantity of NFT to mint.
   private feesBase(num_of_nfts: number)
   {
-    if (num_of_nfts < 10)
+    if (num_of_nfts < _feeThreshold1)
     {
-      local feesBase:number := 1;
+      local feesBase:number := 1 * _feesMultiplier;
     }
-    else if (num_of_nfts >= 10 && num_of_nfts < 40)
+    if (num_of_nfts >= _feeThreshold1 && num_of_nfts < _feeThreshold2)
     {
-      local feesBase:number := 2.5;
+      local feesBase:number := 2.5 * _feesMultiplier;
     }
-    else if (num_of_nfts >= 40 && num_of_nfts < 70)
+    else if (num_of_nfts >= _feeThreshold2 && num_of_nfts < _feeThreshold3)
     {
-      local feesBase:number := 5;
+     local feesBase:number := 5 * _feesMultiplier;
     }
     else
     {
-      local feesBase:number := 10;
+      local feesBase:number := 10 * _feesMultiplier;
     }
     return feesBase;
   }
