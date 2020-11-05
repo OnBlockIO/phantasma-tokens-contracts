@@ -152,11 +152,11 @@ token ghost {
     // get current fees multiplier
     property getFeesMultiplier:number = _feesMultiplier;
     // get current fees threshold1
-    property getFeesMultiplier:number = _feeThreshold1;
+    property getFeeThreshold1:number = _feeThreshold1;
     // get current fees threshold2
-    property getFeesMultiplier:number = _feeThreshold2;
+    property getFeeThreshold2:number = _feeThreshold2;
     // get current fees threshold2
-    property getFeesMultiplier:number = _feeThreshold3;
+    property getFeeThreshold3:number = _feeThreshold3;
 
     // infuse events
     event InfuseEventMint:infuseEventData = infuseEventMint;
