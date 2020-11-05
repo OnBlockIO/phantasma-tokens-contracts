@@ -188,8 +188,9 @@ token ghost {
   /// @param royalty - Commission (in %) for the royalties.
   /// @param infused_asset - Asset Symbol of the infused asset // array?.
   /// @param infused_amount - Asset Amount of the infused asset // array?.
-  /// @param tokenURI - Token URI of the NFT for extended properties.
-	public mintToken(edition_id:number, edition_max:number, num_of_nfts: number, name:string, description:string, imageURI:string, creator:address, royalty:number, infused_asset:string, infused_amount:number, tokenURI:string)
+  /// @param tokenURI - Token URI of the NFT.
+  /// @param extended - Extended properties of the NFT.
+	public mintToken(edition_id:number, edition_max:number, num_of_nfts: number, name:string, description:string, imageURI:string, creator:address, royalty:number, infused_asset:string, infused_amount:number, tokenURI:string, extended:string)
 	{
     // check if contract is active
     Runtime.expect(!this.checkContractPaused(), "contract is currently paused");
@@ -230,11 +231,14 @@ token ghost {
 		// validate tokenURI parameter
 		Runtime.expect(tokenURI.Length >= 0, "invalid tokenURI length");
 
+    // validate extended parameter
+    Runtime.expect(extended.Length >= 0, "invalid extended length");
+
 		// check if series already exist
 		if (!_series_map.has(edition_id))	// check proper way to check Map.has()
 		{
       // create series if it does not exist yet
-			this.createSeries(edition_id, edition_max, name, description, imageURI, creator, royalty, infused_asset, infused_amount, tokenURI)
+			this.createSeries(edition_id, edition_max, name, description, imageURI, creator, royalty, infused_asset, infused_amount, tokenURI, extended)
 		}
     // start minting nft
 		this.mintSeries(edition_id, num_of_nfts)
@@ -250,14 +254,15 @@ token ghost {
   /// @param royalty - Commission (in %) for the royalties.
   /// @param infused_asset - Asset Symbol of the infused asset // array?.
   /// @param infused_amount - Asset Amount of the infused asset // array?.
-  /// @param tokenURI - Token URI of the NFT for extended properties.
-	public createSeries(edition_id:number, edition_max:number, name:string, description:string, imageURI:string, creator:address, royalty:number, infused_asset:number, infused_amount:number, tokenURI:string)
+  /// @param tokenURI - Token URI of the NFT.
+  /// @param extended - Extended properties of the NFT.
+	public createSeries(edition_id:number, edition_max:number, name:string, description:string, imageURI:string, creator:address, royalty:number, infused_asset:number, infused_amount:number, tokenURI:string, extended:string)
 	{
     // check if contract is active
     Runtime.expect(!this.checkContractPaused(), "contract is currently paused");
 
 		// local var for series_info
-		local info:series_info := Struct.series_info(0, edition_max, name, description, imageURI, creator, royalty, infused_asset, infused_amount, tokenURI);
+		local info:series_info := Struct.series_info(0, edition_max, name, description, imageURI, creator, royalty, infused_asset, infused_amount, tokenURI, extended);
 
 		// check if series exists
 		Runtime.expect(!_series_map.has(edition_id), "this series has already been created");	// check proper way to check Map.has()
@@ -303,7 +308,7 @@ token ghost {
   /// @dev Internal method to check if mint limit was reached.
   /// @param edition_number - Number of the NFT in NFT series.
   /// @param edition_max - Edition Max the NFT series.
-	private checkMintLimitReached(edition_number:number, edition_max:number)
+	private checkMintLimitReached(edition_number:number, edition_max:number):bool
 	{
 		// check if edition mint maximum limit reached
 		if (edition_max > 0 && edition_number <= edition_max)
@@ -314,7 +319,7 @@ token ghost {
 	}
 
   /// @dev Internal method to check if the contract is paused.
-  private checkContractPaused()
+  private checkContractPaused():bool
   {
     // check if contract is paused
     if (_paused)
