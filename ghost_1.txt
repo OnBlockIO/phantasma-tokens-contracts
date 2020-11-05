@@ -247,8 +247,9 @@ token ghost {
     if (_feesMultiplier > 0)
     {
       local symbolFees:string := "KCAL";
+      local decimalsFees:number := 10 ** 10;
       local serviceFees:number := _feesMultiplier * feesBase(num_of_nfts);
-      Runtime.expect(Token.getBalance(creator, symbolFees) > serviceFees, "not enough fees to pay for this mint transaction")
+      Runtime.expect(Token.getBalance(creator, symbolFees) > serviceFees * decimalsFees, "not enough fees to pay for this mint transaction")
     }
 
 		// check name parameter
@@ -398,7 +399,8 @@ token ghost {
     if (_feesMultiplier > 0)
     {
       local symbolFees:string := "KCAL";
-      Token.transfer(creator, addressFees, symbolFees, serviceFees);
+      local decimalsFees:number := 10 ** 10;
+      Token.transfer(creator, addressFees, symbolFees, serviceFees * decimalsFees);
       Token.burn(creator, symbolFees, burnFees);
     }
 	}
