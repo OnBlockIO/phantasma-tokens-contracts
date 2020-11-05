@@ -241,7 +241,7 @@ token ghost {
 			this.createSeries(edition_id, edition_max, name, description, imageURI, creator, royalty, infused_asset, infused_amount, tokenURI, extended)
 		}
     // start minting nft
-		this.mintSeries(edition_id, num_of_nfts)
+		this.mintSeries(creator, edition_id, num_of_nfts)
 	}
 
   /// @dev Create a new NFT series in GhostMarket contract.
@@ -272,12 +272,16 @@ token ghost {
 	}
 
   /// @dev Mint a specific number of NFT in a specific series on GhostMarket contract.
+  /// @param edition_id - Address of the NFT series creator - minting on a series is restricted to this address.
   /// @param edition_id - ID of the NFT series.
   /// @param num_of_nfts - Quantity of NFT to mint.
-	public mintSeries(edition_id: number, num_of_nfts: number)
+	public mintSeries(creator:address, edition_id: number, num_of_nfts: number)
 	{
     // check if contract is active
     Runtime.expect(!this.checkContractPaused(), "contract is currently paused");
+
+    // check is witness
+    Runtime.expect(Runtime.isWitness(creator), "invalid witness");
 
 		// local var for mint loop
 		local index:number := 0;
