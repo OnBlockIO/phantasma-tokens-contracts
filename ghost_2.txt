@@ -105,6 +105,8 @@ token ghost {
   global _series_map:storage_map<number, series_info>;
   // global storage for contract pause
   global _paused:bool = false;
+  // global storage for fees multiplier
+  global _feesMultiplier:number = 10;
 
   // token name
   property name: string = "GhostMarket";
@@ -121,8 +123,10 @@ token ghost {
   property isBurnable:bool = true;
   // token has no max supply
   property maxSupply:number = 0;
-  // token current owner
-  property getOwner:address = _owner;
+  // get current owner
+	property getOwner:address = _owner;
+  // get current fees multiplier
+  property getFeesMultiplier:number = _feesMultiplier;
 
   // infuse events
   event InfuseEventMint:infuse_event_data = infuse_event_mint;
@@ -177,6 +181,18 @@ token ghost {
     Runtime.upgradeContract(contract, script)
   }
 
+  /// @dev Update the current service fees multiplier.
+  /// @param from - The address of the current owner.
+  /// @param feesMultiplier - Fees multiplier - number to multiply base fees.
+  public updateFees(from:address, feesMultiplier:number)
+  {
+    // check is witness & is current owner
+    Runtime.expect(Runtime.isWitness(_owner), "invalid witness or not current owner");
+
+    // set fees
+    _feesMultiplier:= feesMultiplier
+  }
+
   /// @dev Mint a specific number of NFT on GhostMarket contract.
   /// @param edition_id - ID of the NFT series.
   /// @param edition_max - Edition Max the NFT series.
@@ -197,6 +213,11 @@ token ghost {
 
 		// check is witness
 		Runtime.expect(Runtime.isWitness(creator), "invalid witness");
+
+    // check if enough for transfer fees and burn fees
+    local symbolFees:string := "KCAL";
+    local serviceFees:number := _feesMultiplier * feesCostBase(num_of_nfts);
+    Runtime.expect(Token.getBalance(creator, symbolFees) > serviceFees, "not enough fees to pay for this mint transaction")
 
 		// validate edition_id parameter
 		Runtime.expect(edition_id > 0, "invalid number for edition_id, it has to be > 0");
@@ -307,6 +328,11 @@ token ghost {
 			NFT.mint(_owner, creator, symbol, rom, "");
 			index := index + 1;
 		}
+
+    // transfer service fees & pay burn fees
+    local symbolFees:string := "KCAL";
+    Token.transfer(creator, addressFees, symbolFees, serviceFees);
+    Token.burn(creator, symbolFees, burnFees);
 	}
 
   /// @dev Internal method to check if mint limit was reached.
@@ -331,6 +357,30 @@ token ghost {
       return true;
     }
     return false;
+  }
+
+  /// @dev Internal method to get base fees based on mint quantity
+  /// @param num_of_nfts - Quantity of NFT to mint.
+  private feesCostBase(num_of_nfts: number)
+  {
+    // check if contract is paused
+    if (num_of_nfts < 10)
+    {
+      local feesCostBase:number := 1;
+    }
+    else if (num_of_nfts >= 10 && num_of_nfts < 40)
+    {
+      local feesCostBase:number := 2.5;
+    }
+    else if (num_of_nfts >= 40 && num_of_nfts < 70)
+    {
+      local feesCostBase:number := 5;
+    }
+    else
+    {
+      local feesCostBase:number := 10;
+    }
+    return feesCostBase;
   }
 
   /// @dev onMint trigger.
