@@ -1,30 +1,41 @@
 /**
- * GHOSTMARKET PHANTASMA SMART CONTRACT - VERSION 1.0
+ * GHOSTMARKET PHANTASMA SMART CONTRACT
  */
 
  /*
-   Everything stored on nft rom.
+   Everything stored on NFT ROM.
    Pros:
      + easier access
    Cons:
      - duplication and more storage used
- 	- rom max size should be 4x probably
+ 	   - rom max size should be 4x probably
 
  */
 
 struct ghost_rom
 {
-	edition_id:number; 		// NFT series
-	edition_number:number; 	// ID in specific NFT series
-	created:timestamp; 		// date created // used to have a unique ID
-	name:string; 			// NFT name
-	description:string; 	// NFT description
-	imageURI:string; 		// NFT image // ipfs hash
-	creator:address; 		// NFT original owner
-	royalty:number; 		// commission %
-	infused_asset:string 	// asset symbol // array?
-	infused_amount:number 	// asset amount // array?
-	tokenURI:string; 		// Token URI for extended properties
+  // ID of the NFT series
+	edition_id:number;
+ 	// Number of the NFT in NFT series
+	edition_number:number;
+  // Date the NFT was created - used to have a unique ID
+	created:timestamp;
+  // Name of the NFT
+	name:string;
+  // Description of the NFT
+	description:string;
+  // Image of the NFT - IPFS hash
+	imageURI:string;
+  // Original owner of the NFT
+	creator:address;
+  // Commission (in %) for the royalties
+	royalty:number;
+  // Asset Symbol of the infused asset // array?
+	infused_asset:string
+  // Asset Amount of the infused asset // array?
+	infused_amount:number
+  // Token URI of the NFT for extended properties
+	tokenURI:string;
 }
 
 struct ghost_ram
@@ -33,17 +44,28 @@ struct ghost_ram
 }
 
 struct series_info {
-	edition_number: number;			// ID in specific NFT series
-	edition_max: number; 			// Max mint limit per NFT series
-	name: string; 					// NFT name
-	description:string; 			// NFT description
-	imageURI:string; 				// NFT image // ipfs hash
-	creator:address; 				// NFT original owner
-	royalty:number; 				// commission %
-	infused_asset:string 			// asset symbol // array?
-	infused_amount:number 			// asset amount // array?
-	tokenURI:string; 				// Token URI for extended properties
-	extended:extended_properties;
+  // Number of the NFT in NFT series
+  edition_number:number;
+  // Edition Max the NFT series
+  edition_max:number;
+  // Name of the NFT
+  name:string;
+  // Description of the NFT
+  description:string;
+  // Image of the NFT - IPFS hash
+  imageURI:string;
+  // Original owner of the NFT
+  creator:address;
+  // Commission (in %) for the royalties
+  royalty:number;
+  // Asset Symbol of the infused asset // array?
+  infused_asset:string
+  // Asset Amount of the infused asset // array?
+  infused_amount:number
+  // Token URI of the NFT for extended properties
+  tokenURI:string;
+  // Extended properties
+  extended:extended_properties;
 }
 
 struct extended_properties
@@ -52,35 +74,46 @@ struct extended_properties
 }
 
 token ghost {
-	global _owner:address;									// global storage for owner address
-	global _contractAddress:address = $THIS_ADDRESS; 		// global storage for contract address
-	global _series_map:storage_map<number, series_info>; 	// global storage for nft editions
-	global _paused:bool = false; 							// global storage for contract pause
+  // global storage for owner address
+	global _owner:address;
+  // global storage for contract address
+	global _contractAddress:address = $THIS_ADDRESS;
+  // global storage for nft editions
+	global _series_map:storage_map<number, series_info>;
+  // global storage for contract pause
+	global _paused:bool = false;
 
+  // token name
 	property name: string = "GhostMarket";
+  // token symbol
 	property symbol: string = "GHOST";
+  // token version
   property version: string = "1.0";
 
-  property isTransferable:bool = true;	// is transferable
-	property isFungible:bool = false;		// is not fungible
-	property isFinite:bool = false;
-  property isDivisible:bool = false;
-	property isFuel:bool = false;
-	property isStakable:bool = false;
-  property isFiat:bool = false;
-	property isForeign:bool = false;
-	property isBurnable:bool = true;		// is burnable
-	property maxSupply:number = 0;			// has no max supply
+  // token is transferable
+  property isTransferable:bool = true;
+  // token is not fungible
+	property isFungible:bool = false;
+  // token is burnable
+	property isBurnable:bool = true;
+  // token has no max supply
+	property maxSupply:number = 0;
+  // token current owner
 	property getOwner:address = _owner;
 
+  // libraries import
 	import Runtime;
 	import Token;
 
+  // constructor with owner
 	constructor(owner:address)
 	{
 		_owner:= owner;
 	}
 
+  /// @dev Update the current token contract owner address to another address.
+  /// @param from - The address of the current owner.
+  /// @param newOwner - The address of the new owner.
 	public updateOwner(from:address, newOwner:address)
 	{
 		// check is witness & is current owner
@@ -93,6 +126,9 @@ token ghost {
 		_owner:= newOwner
 	}
 
+  /// @dev Update the current status of the token contract (paused / active).
+  /// @param from - The address of the current owner.
+  /// @param pause - The status of the contract (bool).
 	public updatePause(from:address, pause:bool)
 	{
 		// check is witness & is current owner
@@ -102,6 +138,9 @@ token ghost {
 		_pause:= pause
 	}
 
+  /// @dev Upgrade the current contract to a new one.
+  /// @param from - The address of the current owner.
+  /// @param script - The script of the new contract.
   public upgradeContract(from:address, script:bytes)
   {
     // check is witness & is current owner
@@ -111,6 +150,18 @@ token ghost {
     Runtime.upgradeContract(contract, script)
   }
 
+  /// @dev Mint a specific number of NFT on GhostMarket contract.
+  /// @param edition_id - ID of the NFT series.
+  /// @param edition_max - Edition Max the NFT series.
+  /// @param num_of_nfts - Quantity of NFT to mint.
+  /// @param name - Name of the NFT to mint.
+  /// @param description - Description of the NFT to mint.
+  /// @param imageURI - Image of the NFT - IPFS hash.
+  /// @param creator - Original owner of the NFT.
+  /// @param royalty - Commission (in %) for the royalties.
+  /// @param infused_asset - Asset Symbol of the infused asset // array?.
+  /// @param infused_amount - Asset Amount of the infused asset // array?.
+  /// @param tokenURI - Token URI of the NFT for extended properties.
 	public mintToken(edition_id:number, edition_max:number, num_of_nfts: number, name:string, description:string, imageURI:string, creator:address, royalty:number, infused_asset:string, infused_amount:number, tokenURI:string)
 	{
 		// check if contract is active
@@ -155,11 +206,24 @@ token ghost {
 		// check if series already exist
 		if (!_series_map.has(edition_id))	// check proper way to check Map.has()
 		{
+      // create series if it does not exist yet
 			this.createSeries(edition_id, edition_max, name, description, imageURI, creator, royalty, infused_asset, infused_amount, tokenURI)
 		}
+    // start minting nft
 		this.mintSeries(edition_id, num_of_nfts)
 	}
 
+  /// @dev Create a new NFT series in GhostMarket contract.
+  /// @param edition_id - ID of the NFT series.
+  /// @param edition_max - Edition Max the NFT series.
+  /// @param name - Name of the NFT to mint.
+  /// @param description - Description of the NFT to mint.
+  /// @param imageURI - Image of the NFT - IPFS hash.
+  /// @param creator - Original owner of the NFT.
+  /// @param royalty - Commission (in %) for the royalties.
+  /// @param infused_asset - Asset Symbol of the infused asset // array?.
+  /// @param infused_amount - Asset Amount of the infused asset // array?.
+  /// @param tokenURI - Token URI of the NFT for extended properties.
 	public createSeries(edition_id:number, edition_max:number, name:string, description:string, imageURI:string, creator:address, royalty:number, infused_asset:number, infused_amount:number, tokenURI:string)
 	{
 		// check if contract is active
@@ -175,6 +239,9 @@ token ghost {
 		_series_map.set(edition_id, series_info);
 	}
 
+  /// @dev Mint a specific number of NFT in a specific series on GhostMarket contract.
+  /// @param edition_id - ID of the NFT series.
+  /// @param num_of_nfts - Quantity of NFT to mint.
 	public mintSeries(edition_id: number, num_of_nfts: number)
 	{
 		// check if contract is active
@@ -206,6 +273,9 @@ token ghost {
 		}
 	}
 
+  /// @dev Internal method to check if mint limit was reached.
+  /// @param edition_number - Number of the NFT in NFT series.
+  /// @param edition_max - Edition Max the NFT series.
 	private checkMintLimitReached(edition_number:number, edition_max:number)
 	{
 		// check if edition mint maximum limit reached
@@ -216,6 +286,7 @@ token ghost {
 		return true;
 	}
 
+  /// @dev Internal method to check if the contract is paused.
 	private checkContractPaused()
 	{
 		// check if contract is paused
@@ -226,6 +297,11 @@ token ghost {
 		return false;
 	}
 
+  /// @dev onMint trigger.
+  /// @param from - Address from.
+  /// @param to - Address to.
+  /// @param symbol - Symbol.
+  /// @param amount - Amount.
   trigger onMint(from:address, to:address, symbol:string, amount:number)
 	{
 		// check if nft infused
@@ -251,6 +327,11 @@ token ghost {
 		}
 	}
 
+  /// @dev onBurn trigger.
+  /// @param from - Address from.
+  /// @param to - Address to.
+  /// @param symbol - Symbol.
+  /// @param amount - Amount.
 	trigger onBurn(from:address, to:address, symbol:string, amount:number)
 	{
 		// check if nft infused
@@ -276,6 +357,7 @@ token ghost {
 		}
 	}
 
+  /// @dev ghost_nft struct.
 	nft ghost_nft<ghost_rom, ghost_ram> {
 
 		property edition_id: number {
