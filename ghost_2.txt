@@ -13,6 +13,7 @@
 
  */
 
+// ghost_rom struct
 struct ghost_rom
 {
   // ID of the NFT series
@@ -23,11 +24,13 @@ struct ghost_rom
   created:timestamp;
 }
 
+// ghost_ram struct
 struct ghost_ram
 {
 
 }
 
+// series_info struct
 struct series_info {
   // Number of the NFT in NFT series
   edition_number:number;
@@ -53,11 +56,46 @@ struct series_info {
   extended:extended_properties;
 }
 
+// extended_properties struct
 struct extended_properties
 {
 
 }
 
+// infuse event struct
+struct infuse_event_data {
+	nftid:number;
+	symbol:string;
+  amount:number;
+}
+
+// mint infuse event
+description infuse_event_mint {
+  code(data:infuse_event_data): string {
+    local result:string := "";
+    result += infuse_event_data.nftid;
+    result += " got infused with ";
+    result += infuse_event_data.amount;
+    result += " ";
+    result += infuse_event_data.symbol;
+    return result;
+  }
+}
+
+// burn infuse event
+description infuse_event_burn {
+  code(data:infuse_event_data): string {
+    local result:string := "";
+    result += infuse_event_data.nftid;
+    result += " got burned for ";
+    result += infuse_event_data.amount;
+    result += " ";
+    result += infuse_event_data.symbol;
+    return result;
+  }
+}
+
+// ghost contract
 token ghost {
   // global storage for owner address
   global _owner:address;
@@ -85,6 +123,10 @@ token ghost {
   property maxSupply:number = 0;
   // token current owner
   property getOwner:address = _owner;
+
+  // infuse events
+  event InfuseEventMint:infuse_event_data = infuse_event_mint;
+  event InfuseEventBurn:infuse_event_data = infuse_event_burn;
 
   // libraries import
   import Runtime;
@@ -303,11 +345,13 @@ token ghost {
 			{
 				// transfer ft from owner to contract
 				Token.transfer(_owner, _contractAddress, rom.infused_asset, rom.infused_amount);
+        emit InfuseEventMint(rom.nftid, rom.infused_asset, rom.infused_amount);
 			}
 			else
 			{
 				// transfer nft from owner to contract
 				NFT.transfer(_owner, _contractAddress, rom.infused_asset, rom.infused_amount);
+        emit InfuseEventMint(rom.nftid, rom.infused_asset, rom.infused_amount);
 			}
 		}
 	}
@@ -333,11 +377,13 @@ token ghost {
 			{
 				// transfer ft from contract to owner
 				Token.transfer(_contractAddress, _owner, rom.infused_asset, rom.infused_amount);
+        emit InfuseEventBurn(rom.nftid, rom.infused_asset, rom.infused_amount);
 			}
 			else
 			{
 				// transfer nft from contract to owner
 				NFT.transfer(_contractAddress, _owner, rom.infused_asset, rom.infused_amount);
+        emit InfuseEventBurn(rom.nftid, rom.infused_asset, rom.infused_amount);
 			}
 		}
 	}
