@@ -271,7 +271,7 @@ token ghost {
 		Runtime.expect(edition_max >= 0, "invalid number for edition_max, it has to be >= 0");
 
 		// check num_of_nfts parameter
-		Runtime.expect(num_of_nfts > 0, "invalid number for edition_max, it has to be > 0");
+		Runtime.expect(num_of_nfts > 0, "invalid number for num_of_nfts, it has to be > 0");
 
     // if fees multiplier > 0, check if enough for transfer fees and burn fees
     if (_feesMultiplier > 0)
@@ -398,7 +398,7 @@ token ghost {
     Runtime.expect(edition_id > 0, "invalid number for edition_id, it has to be > 0");
 
     // check num_of_nfts parameter
-    Runtime.expect(num_of_nfts > 0, "invalid number for edition_max, it has to be > 0");
+    Runtime.expect(num_of_nfts > 0, "invalid number for num_of_nfts, it has to be > 0");
 
 		// set local var for mint loop
 		local index:number := 0;
