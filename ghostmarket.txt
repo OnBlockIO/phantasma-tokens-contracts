@@ -230,6 +230,33 @@ token ghost {
         return feesBase;
     }
 
+	/// @dev Internal method to check if enough fees based on mint quantity
+    /// @param numOfNfts - Quantity of NFT to mint.
+	/// @param creator - Address trying to mint.
+    private checkFees(numOfNfts:number, creator:address):bool
+    {
+		local symbolFees:string := "KCAL";
+		// local decimalsFees:number := 10 ** 10; // need math.pow ?
+		local decimalsFees:number := 10000000000;
+		local feesBaseResult:number := this.feesBase(numOfNfts);
+		local serviceFees:number := _feesMultiplier * feesBaseResult;
+		Runtime.expect(Token.getBalance(creator, symbolFees) > serviceFees * decimalsFees, "not enough fees to pay for this mint transaction");
+    }
+
+	/// @dev Internal method to transfer fees based on mint quantity
+    /// @param numOfNfts - Quantity of NFT to mint.
+	/// @param creator - Address trying to mint.
+    private payFees(numOfNfts:number, creator:address):bool
+    {
+		local symbolFees:string := "KCAL";
+		// local decimalsFees:number := 10 ** 10; // need math.pow ?
+		local decimalsFees:number := 10000000000;
+		local feesBaseResult:number := this.feesBase(numOfNfts);
+		local serviceFees:number := _feesMultiplier * feesBaseResult;
+		Token.transfer(creator, _addressFees, symbolFees, serviceFees * decimalsFees);
+		Token.burn(creator, symbolFees, serviceFees);
+    }
+
     /// @dev Update the current token contract owner address to another address.
     /// @param newOwner - The address of the new owner.
     public updateOwner(newOwner:address)
@@ -356,12 +383,7 @@ token ghost {
         // if fees multiplier > 0, check if enough for transfer fees and burn fees
         if (_feesMultiplier > 0)
         {
-            local symbolFees:string := "KCAL";
-            // local decimalsFees:number := 10 ** 10; // need math.pow ?
-			local decimalsFees:number := 10000000000;
-			local feesBaseResult:number := this.feesBase(numOfNfts);
-            local serviceFees:number := _feesMultiplier * feesBaseResult;
-            Runtime.expect(Token.getBalance(creator, symbolFees) > serviceFees * decimalsFees, "not enough fees to pay for this mint transaction");
+			this.checkFees(numOfNfts, creator);
         }
 
         // check name parameter
@@ -507,16 +529,10 @@ token ghost {
             index := index + 1;
         }
 
-        // if feesMultipler > 0, transfer service fees & pay burn fees
+        // if feesMultipler > 0, pay service fees & pay burn fees
         if (_feesMultiplier > 0)
         {
-            local symbolFees:string := "KCAL";
-            // local decimalsFees:number := 10 ** 10; // need math.pow ?
-			local decimalsFees:number := 10000000000;
-			local feesBaseResult:number := this.feesBase(numOfNfts);
-            local serviceFees:number := _feesMultiplier * feesBaseResult;
-            Token.transfer(creator, _addressFees, symbolFees, serviceFees * decimalsFees);
-            Token.burn(creator, symbolFees, serviceFees);
+			this.payFees(numOfNfts, creator);
         }
     }
 
