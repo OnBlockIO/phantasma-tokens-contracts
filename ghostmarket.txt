@@ -166,6 +166,7 @@ token ghost {
     import Runtime;
     import Token;
 	import Map;
+	import NFT;
 
     // constructor with owner
     constructor(owner:address)
@@ -213,20 +214,23 @@ token ghost {
         {
             feesBase := 10 * _feesMultiplier;
         }
-        /*
-		else if (numOfNfts >= _feeThreshold1 & numOfNfts < _feeThreshold2)
-        {
-            feesBase:= 25 * _feesMultiplier;
-        }
-        else if (numOfNfts >= _feeThreshold2 & numOfNfts < _feeThreshold3)
-        {
-            feesBase := 50 * _feesMultiplier;
-        }
-		else
-		{
-			feesBase := 100 * _feesMultiplier;
+		else {
+			if (numOfNfts >= _feeThreshold1 & numOfNfts < _feeThreshold2)
+			{
+				feesBase:= 25 * _feesMultiplier;
+			}
+			else
+			{
+				if (numOfNfts >= _feeThreshold2 & numOfNfts < _feeThreshold3)
+				{
+					feesBase := 50 * _feesMultiplier;
+				}
+				else
+				{
+					feesBase := 100 * _feesMultiplier;
+				}
+			}
 		}
-		*/
         return feesBase;
     }
 
@@ -263,9 +267,6 @@ token ghost {
     {
         // check is witness & is current owner
         Runtime.expect(Runtime.isWitness(_owner), "invalid witness");
-
-        // check new owner address length
-        // Runtime.expect(newOwner.Length == 47 && newOwner.startsWith("P"), "invalid address format for newOwner"); // change by proper check
 
         // set new owner
         _owner:= newOwner;
@@ -343,9 +344,6 @@ token ghost {
         // check is witness & is current owner
         Runtime.expect(Runtime.isWitness(_owner), "invalid witness");
 
-        // check new owner address length
-        // Runtime.expect(addressFees.Length == 47 && addressFees.startsWith("P"), "invalid address format for addressFees"); // change by proper check
-
         // set fees
         _addressFees:= addressFees;
     }
@@ -387,31 +385,29 @@ token ghost {
         }
 
         // check name parameter
-        //Runtime.expect(name.Length > 0, "invalid name length");
+        Runtime.expect(name.length() > 0, "invalid name length");
 
         // check description parameter // reduce description length?
-        // Runtime.expect(description.Length >= 10 && description.Length <= 100, "invalid description length");
+        Runtime.expect(description.length() >= 10, "invalid description length");
+		Runtime.expect(description.length() <= 100, "invalid description length");
 
         // check imageURI parameter
-        // Runtime.expect(imageURI.Length >= 0, "invalid imageURI length");
-
-        // check creator parameter
-        // Runtime.expect(creator.Length == 47 && creator.startsWith("P"), "invalid address format for creator");
+        Runtime.expect(imageURI.length() >= 0, "invalid imageURI length");
 
         // check royalty parameter
         Runtime.expect(royalty >= 0 & royalty <= 100, "invalid number for royalties, it has to be between 0 and 100");
 
         // check infusedAsset parameter // allow array?
-        // Runtime.expect(Runtime.tokenExists(infusedAsset), "infusedAsset is not a valid token"); // need proper runtime
+        Runtime.expect(Token.exists(infusedAsset), "infusedAsset is not a valid token");
 
         // check infusedAmount parameter // allow array?
         Runtime.expect(infusedAmount >= 0, "invalid number for infusedAmount, it has to be >= 0");
 
         // check tokenURI parameter
-       //  Runtime.expect(tokenURI.Length >= 0, "invalid tokenURI length");
+        Runtime.expect(tokenURI.length() >= 0, "invalid tokenURI length");
 
         // check extended parameter
-        // Runtime.expect(extended.Length >= 0, "invalid extended length");
+        Runtime.expect(extended.length() >= 0, "invalid extended length");
 
         // check if series already exist
         // if (!_seriesMap.has(editionId))    // check proper way to check Map.has()
@@ -447,31 +443,30 @@ token ghost {
         Runtime.expect(editionMax >= 0, "invalid number for editionMax, it has to be >= 0");
 
         // check name parameter
-        // Runtime.expect(name.Length >= 5 && name.Length <= 30, "invalid name length");
+		Runtime.expect(description.length() >= 5, "invalid name length");
+		Runtime.expect(description.length() <= 30, "invalid name length");
 
         // check description parameter // reduce description length?
-        // Runtime.expect(description.Length >= 10 && description.Length <= 100, "invalid description length");
+		Runtime.expect(description.length() >= 10, "invalid description length");
+		Runtime.expect(description.length() <= 100, "invalid description length");
 
         // check imageURI parameter
-        // Runtime.expect(imageURI.Length >= 0, "invalid imageURI length");
-
-        // check creator parameter
-        // Runtime.expect(creator.Length == 47 && creator.startsWith("P"), "invalid address format for creator");
+        Runtime.expect(imageURI.length() >= 0, "invalid imageURI length");
 
         // check royalty parameter
         Runtime.expect(royalty >= 0 & royalty <= 100, "invalid number for royalties, it has to be between 0 and 100");
 
         // check infusedAsset parameter // allow array?
-        // Runtime.expect(Runtime.tokenExists(infusedAsset), "infusedAsset is not a valid token");
+        Runtime.expect(Token.exists(infusedAsset), "infusedAsset is not a valid token");
 
         // check infusedAmount parameter // allow array?
         Runtime.expect(infusedAmount >= 0, "invalid number for infusedAmount, it has to be >= 0");
 
         // check tokenURI parameter
-        // Runtime.expect(tokenURI.Length >= 0, "invalid tokenURI length");
+        // Runtime.expect(tokenURI.length() >= 0, "invalid tokenURI length");
 
         // check extended parameter
-        // Runtime.expect(extended.Length >= 0, "invalid extended length");
+        // Runtime.expect(extended.length() >= 0, "invalid extended length");
 
         // set local var for seriesInfo
         local info:seriesInfo := Struct.seriesInfo(0, editionMax, name, description, imageURI, creator, royalty, infusedAsset, infusedAmount); // missing tokenURI, extended
@@ -494,9 +489,6 @@ token ghost {
 
         // check is witness
         Runtime.expect(Runtime.isWitness(creator), "invalid witness");
-
-        // check creator parameter
-        //Runtime.expect(creator.Length == 47 && creator.startsWith("P"), "invalid address format for creator");
 
         // check editionId parameter
         Runtime.expect(editionId > 0, "invalid number for editionId, it has to be > 0");
@@ -547,24 +539,25 @@ token ghost {
         // if (rom.infusedAmount > 0) // how to query rom
         // {
             // set local var for get token
-            // local gettoken:= Runtime.getToken(rom.infusedAsset);                // correct syntax?
+            // local tokenROM:= Runtime.getToken(rom.infusedAsset);                // correct syntax?
 
-            // set local var for fungibility
-            // local fungible:bool = gettoken.Flags.HasFlag(TokenFlags.Fungible);    // correct syntax?
+            // set local var for token flags
+			// local flags:TokenFlags := Token.getFlags(tokenROM);
 
             // if fungible
-            // if (fungible)
-            // {
-                // transfer ft from owner to contract
-                // Token.transfer(_owner, _contractAddress, rom.infusedAsset, rom.infusedAmount);
-                // emit InfuseEventMint(rom.nftid, rom.infusedAsset, rom.infusedAmount);
-            // }
-            // else
-            //{
-            //    // transfer nft from owner to contract
-            //    NFT.transfer(_owner, _contractAddress, rom.infusedAsset, rom.infusedAmount);
-            //    emit InfuseEventMint(rom.nftid, rom.infusedAsset, rom.infusedAmount);
-            // }
+            // if (flags.isSet(TokenFlags.Fungible)) {
+				// {
+					// transfer ft from owner to contract
+					// Token.transfer(_owner, _contractAddress, rom.infusedAsset, rom.infusedAmount); // correct syntax?
+					// emit InfuseEventMint(rom.nftid, rom.infusedAsset, rom.infusedAmount); // correct syntax?
+				// }
+				// else
+				//{
+					// transfer nft from owner to contract
+					// NFT.transfer(_owner, _contractAddress, rom.infusedAsset, rom.infusedAmount); // correct syntax?
+					// emit InfuseEventMint(rom.nftid, rom.infusedAsset, rom.infusedAmount); // correct syntax?
+				// }
+			//}
         // }
     }
 
@@ -576,82 +569,85 @@ token ghost {
     trigger onBurn(from:address, to:address, symbol:string, amount:number)
     {
         // check if nft infused
-        // if (rom.infusedAmount > 0)
+        // if (rom.infusedAmount > 0) // how to query rom
         // {
-            // local var for get token
-            //local gettoken:= Runtime.getToken(rom.infusedAsset);                // correct syntax?
+            // set local var for get token
+            // local tokenROM:= Runtime.getToken(rom.infusedAsset);                // correct syntax?
 
-            // local var for fungibility
-            //local fungible:bool = gettoken.Flags.HasFlag(TokenFlags.Fungible);    // correct syntax?
+            // set local var for token flags
+			// local flags:TokenFlags := Token.getFlags(tokenROM);
 
             // if fungible
-            //if (fungible)
-            //{
-                // transfer ft from contract to owner
-                //Token.transfer(_contractAddress, _owner, rom.infusedAsset, rom.infusedAmount);
-                //emit InfuseEventBurn(rom.nftid, rom.infusedAsset, rom.infusedAmount);
-            //}
-            //else
-            //{
-                // transfer nft from contract to owner
-                //NFT.transfer(_contractAddress, _owner, rom.infusedAsset, rom.infusedAmount);
-                //emit InfuseEventBurn(rom.nftid, rom.infusedAsset, rom.infusedAmount);
-            //}
-        }
+            // if (flags.isSet(TokenFlags.Fungible)) {
+				// {
+					// transfer ft from contract to owner
+					// Token.transfer(_contractAddress, _owner, rom.infusedAsset, rom.infusedAmount);
+					// emit InfuseEventMint(rom.nftid, rom.infusedAsset, rom.infusedAmount);
+				// }
+				// else
+				//{
+					// transfer nft from contract to owner
+					// NFT.transfer(_contractAddress, _owner, rom.infusedAsset, rom.infusedAmount); // correct syntax?
+					// emit InfuseEventMint(rom.nftid, rom.infusedAsset, rom.infusedAmount); // correct syntax?
+				// }
+			// }
+		// }
     }
 
-    /// @dev ghostNft struct.
-    nft ghostNft<ghostRom, ghostRam> {
+}
 
-        property editionId:number {
-            // return rom.editionId;
-        }
+/// @dev ghostNft struct.
+nft ghostNft<ghostRom, ghostRam> {
 
-        property editionNumber:number {
-            // return rom.editionNumber;
-        }
+	property editionId:number {
+		// return rom.editionId;
+	}
 
-        property editionMax:number {
-            // return rom.editionMax;
-        }
+	property editionNumber:number {
+		// return rom.editionNumber;
+	}
 
-        property created:timestamp {
-            // return rom.created;
-        }
+	property editionMax:number {
+		// return rom.editionMax;
+	}
 
-        property name:string {
-            // return rom.name;
-        }
+	property created:timestamp {
+		// return rom.created;
+	}
 
-        property description:string {
-            // return rom.description;
-        }
+	property name:string {
+		// return rom.name;
+	}
 
-        property imageURI:string {
-            // return rom.imageURI;
-        }
+	property description:string {
+		// return rom.description;
+	}
 
-        property creator:address {
-            // return rom.creator;
-        }
+	property imageURI:string {
+		// return rom.imageURI;
+	}
 
-        property royalty:number {
-            // return rom.royalty;
-        }
+	property creator:address {
+		// return rom.creator;
+	}
 
-        property infusedAsset:string {
-            // return rom.infusedAsset;
-        }
+	property royalty:number {
+		// return rom.royalty;
+	}
 
-        property infusedAmount:number {
-            // return rom.infusedAmount;
-        }
+	property infusedAsset:string {
+		// return rom.infusedAsset;
+	}
 
-        property extended:string {
-            // return rom.extended;
-        }
+	property infusedAmount:number {
+		// return rom.infusedAmount;
+	}
 
-        property tokenURI:string {
-            // return rom.tokenURI;
-        }
+	property extended:string {
+		// return rom.extended;
+	}
+
+	property tokenURI:string {
+		// return rom.tokenURI;
+	}
 }
