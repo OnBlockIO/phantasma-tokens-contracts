@@ -1,5 +1,5 @@
 /**
- * GHOSTMARKET PHANTASMA SMART CONTRACT
+ * GHOSTMARKET - PHANTASMA SMART CONTRACT
  */
 
 // ghostRom struct
@@ -19,8 +19,8 @@ struct ghostRom
     imageURI:string;
     // Original owner of the NFT - address
     creator:address;
-    // Commission (in %) for the royalties - number
-    royalty:number;
+    // Commission (in %) for the royalties - decimal<2>
+    royalty:decimal<2>;
     // Asset Symbol of the infused asset // array? - string
     infusedAsset:string;
     // Asset Amount of the infused asset // array? - number
@@ -51,8 +51,8 @@ struct seriesInfo {
     imageURI:string;
     // Original owner of the NFT - address
     creator:address;
-    // Commission (in %) for the royalties - number
-    royalty:number;
+    // Commission (in %) for the royalties - decimal<2>
+    royalty:decimal<2>;
     // Asset Symbol of the infused asset // array? - string
     infusedAsset:string;
     // Asset Amount of the infused asset // array? - number
@@ -71,7 +71,7 @@ struct extendedProperties
 
 // infuse event struct
 struct infuseEventData {
-	// NFT ID - number
+    // NFT ID - number
     nftid:number;
     // Infused asset - string
     symbol:string;
@@ -116,8 +116,8 @@ token GHOST {
     // global storage for contract pause
     global _contractPaused:bool;
     // global storage for fees multiplier
-    global _feesMultiplier:number;
-	// global storage for fees symbol
+    global _feesMultiplier:decimal<2>;
+	  // global storage for fees symbol
     global _feesSymbol:string;
     // global storage for fees threshold1
     global _feesThreshold1:number;
@@ -125,8 +125,8 @@ token GHOST {
     global _feesThreshold2:number;
     // global storage for fees threshold3
     global _feesThreshold3:number;
-	// global storage for fees address
-	global _feesAddress:address;
+	  // global storage for fees address
+	  global _feesAddress:address;
 
     // token name
     property name:string = "GhostMarket NFT";
@@ -144,8 +144,8 @@ token GHOST {
     // get current owner address
     property getAddressOwner:address = _addressOwner;
     // get current fees multiplier
-    property getFeesMultiplier:number = _feesMultiplier;
-	// get current fees symbol
+    property getFeesMultiplier:decimal<2> = _feesMultiplier;
+	  // get current fees symbol
     property getFeesSymbol:string = _feesSymbol;
     // get current fees threshold1
     property getFeesThreshold1:number = _feesThreshold1;
@@ -153,7 +153,7 @@ token GHOST {
     property getFeesThreshold2:number = _feesThreshold2;
     // get current fees threshold2
     property getFeesThreshold3:number = _feesThreshold3;
-	// get current fees address
+	  // get current fees address
     property getFeesAddress:address = _feesAddress;
 
     // infuse events
@@ -163,24 +163,24 @@ token GHOST {
     // libraries import
     import Runtime;
     import Token;
-	import Map;
-	import NFT;
+	  import Map;
+	  import NFT;
 
     // constructor with owner
     constructor(owner:address)
     {
-        _addressOwner:= owner;
-		_addressContract:= $THIS_ADDRESS;
-		_contractPaused:= false;
-		_feesMultiplier:= 1;
-		_feesSymbol:= "KCAL";
-		_feesThreshold1:= 10;
-		_feesThreshold2:= 40;
-		_feesThreshold3:= 70;
-		_feesAddress:= @P2KLzxq8cUi47URLZZYcLs54WPVYnknrHWVryUUUqhuhq5K; // ghostmarket
+      _addressOwner:= owner;
+  		_addressContract:= $THIS_ADDRESS;
+  		_contractPaused:= false;
+  		_feesMultiplier:= 100;
+  		_feesSymbol:= "KCAL";
+  		_feesThreshold1:= 10;
+  		_feesThreshold2:= 40;
+  		_feesThreshold3:= 70;
+  		_feesAddress:= @P2KLzxq8cUi47URLZZYcLs54WPVYnknrHWVryUUUqhuhq5K; // ghostmarket
     }
 
-	/// @dev Internal method to check if mint limit was reached.
+	  /// @dev Internal method to check if mint limit was reached.
     /// @param editionNumber - Number of the NFT in NFT series - number
     /// @param editionMax - Edition Max the NFT series - number
     private checkMintLimitReached(editionNumber:number, editionMax:number):bool
@@ -214,55 +214,55 @@ token GHOST {
         {
             feesBase := 10 * _feesMultiplier;
         }
-		else {
-    		// if < threshold 2
-			if (numOfNfts >= _feesThreshold1 & numOfNfts < _feesThreshold2)
-			{
-				feesBase:= 25 * _feesMultiplier;
-			}
-			else
-			{
+    		else {
+      		// if < threshold 2
+    			if (numOfNfts >= _feesThreshold1 & numOfNfts < _feesThreshold2)
+    			{
+    				feesBase:= 25 * _feesMultiplier;
+    			}
+    			else
+    			{
       			// if < threshold 3
-				if (numOfNfts >= _feesThreshold2 & numOfNfts < _feesThreshold3)
-				{
-					feesBase := 50 * _feesMultiplier;
-				}
+    				if (numOfNfts >= _feesThreshold2 & numOfNfts < _feesThreshold3)
+    				{
+    					feesBase := 50 * _feesMultiplier;
+    				}
         		// if > threshold 3
-				else
-				{
-					feesBase := 100 * _feesMultiplier;
-				}
-			}
-		}
-        return feesBase;
+    				else
+    				{
+    					feesBase := 100 * _feesMultiplier;
+    				}
+    			}
+    		}
+    return feesBase;
     }
 
-	/// @dev Internal method to check if enough fees based on mint quantity
+	  /// @dev Internal method to check if enough fees based on mint quantity
     /// @param numOfNfts - Quantity of NFT to mint - number
-	/// @param creator - Address trying to mint - address
+	  /// @param creator - Address trying to mint - address
     private checkFees(numOfNfts:number, creator:address)
     {
-		// local decimalsFees:number := 10 ** Token.getDecimals(_feesSymbol); // need math.pow & getDecimals ?
-		local decimalsFees:number := 10000000000;
-		local feesBaseResult:number := this.feesBase(numOfNfts);
-		local serviceFees:number := _feesMultiplier * feesBaseResult;
-		// Runtime.expect(Token.getBalance(creator, _feesSymbol) > serviceFees * decimalsFees * 10 ** Token.getDecimals(_feesSymbol), "not enough fees to pay for this mint transaction"); // need math.pow & getDecimals ?
-		Runtime.expect(Token.getBalance(creator, _feesSymbol) > serviceFees * decimalsFees * 10000000000, "not enough fees to pay for this mint transaction");
+  		// local decimalsFees:number := 10 ** Token.getDecimals(_feesSymbol); // need math.pow & getDecimals ?
+  		local decimalsFees:number := 10000000000;
+  		local feesBaseResult:number := this.feesBase(numOfNfts);
+  		local serviceFees:number := _feesMultiplier * feesBaseResult;
+  		// Runtime.expect(Token.getBalance(creator, _feesSymbol) > serviceFees * decimalsFees * 10 ** Token.getDecimals(_feesSymbol), "not enough fees to pay for this mint transaction"); // need math.pow & getDecimals ?
+  		Runtime.expect(Token.getBalance(creator, _feesSymbol) > serviceFees * decimalsFees * 10000000000, "not enough fees to pay for this mint transaction");
     }
 
-	/// @dev Internal method to transfer fees based on mint quantity
+	  /// @dev Internal method to transfer fees based on mint quantity
     /// @param numOfNfts - Quantity of NFT to mint - number
-	/// @param creator - Address trying to mint - address
+	  /// @param creator - Address trying to mint - address
     private payFees(numOfNfts:number, creator:address)
     {
-		// local decimalsFees:number := 10 ** Token.getDecimals(_feesSymbol); // need math.pow & getDecimals ?
-		local decimalsFees:number := 10000000000;
-		local feesBaseResult:number := this.feesBase(numOfNfts);
-		local serviceFees:number := _feesMultiplier * feesBaseResult;
-		// Token.transfer(creator, _feesAddress, _feesSymbol, serviceFees * decimalsFees); // need math.pow & getDecimals ?
-		// Token.burn(creator, _feesSymbol, serviceFees); // need math.pow & getDecimals ?
-		Token.transfer(creator, _feesAddress, _feesSymbol, serviceFees * decimalsFees * 10000000000);
-		Token.burn(creator, _feesSymbol, serviceFees * 10000000000);
+  		// local decimalsFees:number := 10 ** Token.getDecimals(_feesSymbol); // need math.pow & getDecimals ?
+  		local decimalsFees:number := 10000000000;
+  		local feesBaseResult:number := this.feesBase(numOfNfts);
+  		local serviceFees:number := _feesMultiplier * feesBaseResult;
+  		// Token.transfer(creator, _feesAddress, _feesSymbol, serviceFees * decimalsFees); // need math.pow & getDecimals ?
+  		// Token.burn(creator, _feesSymbol, serviceFees); // need math.pow & getDecimals ?
+  		Token.transfer(creator, _feesAddress, _feesSymbol, serviceFees * decimalsFees * 10000000000);
+  		Token.burn(creator, _feesSymbol, serviceFees * 10000000000);
     }
 
     /// @dev Update the current token contract owner address to another address.
@@ -299,8 +299,8 @@ token GHOST {
     }
 
     /// @dev Update the current fees multiplier.
-    /// @param feesMultiplier - number to use to multiply base fees - number
-    public updateFeesMultiplier(feesMultiplier:number)
+    /// @param feesMultiplier - number to use to multiply base fees - decimal<2>
+    public updateFeesMultiplier(feesMultiplier:decimal<2>)
     {
         // check is witness & is current owner
         Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
@@ -312,7 +312,7 @@ token GHOST {
         _feesMultiplier:= feesMultiplier;
     }
 
-	/// @dev Update the current asset used for fees.
+	  /// @dev Update the current asset used for fees.
     /// @param feesSymbol - asset to use to pay fees - string
     public updateFeesSymbol(feesSymbol:string)
     {
@@ -320,7 +320,7 @@ token GHOST {
         Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
 
         // check feesSymbol parameter
-		Runtime.expect(Token.exists(feesSymbol), "feesSymbol is not a valid token");
+		    Runtime.expect(Token.exists(feesSymbol), "feesSymbol is not a valid token");
 
         // set fees
         _feesSymbol:= feesSymbol;
@@ -355,7 +355,7 @@ token GHOST {
         }
     }
 
-	/// @dev Update the current fees address.
+	  /// @dev Update the current fees address.
     /// @param feesAddress - address used to collect fees - address
     public updateFeesAddress(feesAddress:address)
     {
@@ -374,12 +374,12 @@ token GHOST {
     /// @param description - Description of the NFT to mint - string
     /// @param imageURI - Image of the NFT - IPFS hash - string
     /// @param creator - Original owner of the NFT - address
-    /// @param royalty - Commission (in %) for the royaltie - number
+    /// @param royalty - Commission (in %) for the royalties - decimal<2>
     /// @param infusedAsset - Asset Symbol of the infused asset // array? - string
     /// @param infusedAmount - Asset Amount of the infused asset // array? - number
     /// @param tokenURI - Token URI of the NFT - string
     /// @param extended - Extended properties of the NFT - ??
-    public mintToken(editionId:number, editionMax:number, numOfNfts:number, name:string, description:string, imageURI:string, creator:address, royalty:number, infusedAsset:string, infusedAmount:number, tokenURI:string, extended:string)
+    public mintToken(editionId:number, editionMax:number, numOfNfts:number, name:string, description:string, imageURI:string, creator:address, royalty:decimal<2>, infusedAsset:string, infusedAmount:number, tokenURI:string, extended:string)
     {
         // check if contract is active
         Runtime.expect(this.checkContractPaused() != true, "contract is currently paused");
@@ -399,22 +399,22 @@ token GHOST {
         // if fees multiplier > 0, check if enough for transfer fees and burn fees
         if (_feesMultiplier > 0)
         {
-			this.checkFees(numOfNfts, creator);
+			     this.checkFees(numOfNfts, creator);
         }
 
         // check name parameter
-		Runtime.expect(name.length() >= 3, "invalid name length");
-		Runtime.expect(name.length() <= 30, "invalid name length");
+    		Runtime.expect(name.length() >= 3, "invalid name length");
+    		Runtime.expect(name.length() <= 30, "invalid name length");
 
         // check description parameter
-		Runtime.expect(description.length() >= 10, "invalid name length");
-		Runtime.expect(description.length() <= 100, "invalid name length");
+    		Runtime.expect(description.length() >= 10, "invalid name length");
+    		Runtime.expect(description.length() <= 100, "invalid name length");
 
         // check imageURI parameter
         Runtime.expect(imageURI.length() >= 0, "invalid imageURI length");
 
         // check royalty parameter
-        Runtime.expect(royalty >= 0 & royalty <= 100, "invalid number for royalties, it has to be between 0 and 100");
+        Runtime.expect(royalty >= 0 & royalty <= 10000, "invalid number for royalties, it has to be between 0 and 10000");
 
         // check infusedAsset parameter // allow array?
         Runtime.expect(Token.exists(infusedAsset), "infusedAsset is not a valid token");
@@ -439,18 +439,18 @@ token GHOST {
     }
 
     /// @dev Create a new NFT series in GhostMarket contract.
-    /// @param editionId - ID of the NFT series.
-    /// @param editionMax - Edition Max the NFT series.
-    /// @param name - Name of the NFT to mint.
-    /// @param description - Description of the NFT to mint.
-    /// @param imageURI - Image of the NFT - IPFS hash.
-    /// @param creator - Original owner of the NFT.
-    /// @param royalty - Commission (in %) for the royalties.
-    /// @param infusedAsset - Asset Symbol of the infused asset // array?.
-    /// @param infusedAmount - Asset Amount of the infused asset // array?.
-    /// @param tokenURI - Token URI of the NFT.
-    /// @param extended - Extended properties of the NFT.
-    public createSeries(editionId:number, editionMax:number, name:string, description:string, imageURI:string, creator:address, royalty:number, infusedAsset:string, infusedAmount:number)  // missing tokenURI, extended
+    /// @param editionId - ID of the NFT series - number
+    /// @param editionMax - Edition Max the NFT series - number
+    /// @param name - Name of the NFT to mint - string
+    /// @param description - Description of the NFT to mint - description
+    /// @param imageURI - Image of the NFT - IPFS hash - string
+    /// @param creator - Original owner of the NFT - address
+    /// @param royalty - Commission (in %) for the royalties - decimal<2>
+    /// @param infusedAsset - Asset Symbol of the infused asset // array? - string
+    /// @param infusedAmount - Asset Amount of the infused asset // array? - number
+    /// @param tokenURI - Token URI of the NFT - string
+    /// @param extended - Extended properties of the NFT - ??
+    public createSeries(editionId:number, editionMax:number, name:string, description:string, imageURI:string, creator:address, royalty:decimal<2>, infusedAsset:string, infusedAmount:number)  // missing tokenURI, extended
     {
         // check if contract is active
         Runtime.expect(this.checkContractPaused() != true, "contract is currently paused");
@@ -462,18 +462,18 @@ token GHOST {
         Runtime.expect(editionMax >= 0, "invalid number for editionMax, it has to be >= 0");
 
         // check name parameter
-		Runtime.expect(name.length() >= 3, "invalid name length");
-		Runtime.expect(name.length() <= 30, "invalid name length");
+    		Runtime.expect(name.length() >= 3, "invalid name length");
+    		Runtime.expect(name.length() <= 30, "invalid name length");
 
         // check description parameter // reduce description length?
-		Runtime.expect(description.length() >= 10, "invalid description length");
-		Runtime.expect(description.length() <= 100, "invalid description length");
+    		Runtime.expect(description.length() >= 10, "invalid description length");
+    		Runtime.expect(description.length() <= 100, "invalid description length");
 
         // check imageURI parameter
         Runtime.expect(imageURI.length() >= 0, "invalid imageURI length");
 
         // check royalty parameter
-        Runtime.expect(royalty >= 0 & royalty <= 100, "invalid number for royalties, it has to be between 0 and 100");
+        Runtime.expect(royalty >= 0 & royalty <= 10000, "invalid number for royalties, it has to be between 0 and 10000");
 
         // check infusedAsset parameter // allow array?
         Runtime.expect(Token.exists(infusedAsset), "infusedAsset is not a valid token");
@@ -498,9 +498,9 @@ token GHOST {
     }
 
     /// @dev Mint a specific number of NFT in a specific series on GhostMarket contract.
-    /// @param editionId - Address of the NFT series creator - minting on a series is restricted to this address.
-    /// @param editionId - ID of the NFT series.
-    /// @param numOfNfts - Quantity of NFT to mint.
+    /// @param editionId - Address of the NFT series creator - minting on a series is restricted to this address - address
+    /// @param editionId - ID of the NFT series - number
+    /// @param numOfNfts - Quantity of NFT to mint - number
     public mintSeries(creator:address, editionId:number, numOfNfts:number)
     {
         // check if contract is active
@@ -543,15 +543,15 @@ token GHOST {
         // if feesMultipler > 0, pay service fees & pay burn fees
         if (_feesMultiplier > 0)
         {
-			this.payFees(numOfNfts, creator);
+		       this.payFees(numOfNfts, creator);
         }
     }
 
     /// @dev onMint trigger.
-    /// @param from - Address from.
-    /// @param to - Address to.
-    /// @param symbol - Symbol.
-    /// @param amount - Amount.
+    /// @param from - Address from - address
+    /// @param to - Address to - address
+    /// @param symbol - Symbol - string
+    /// @param amount - Amount - number
     trigger onMint(from:address, to:address, symbol:string, amount:number)
     {
         // check if nft infused
@@ -581,10 +581,10 @@ token GHOST {
     }
 
     /// @dev onBurn trigger.
-    /// @param from - Address from.
-    /// @param to - Address to.
-    /// @param symbol - Symbol.
-    /// @param amount - Amount.
+    /// @param from - Address from - address
+    /// @param to - Address to - address
+    /// @param symbol - Symbol - string
+    /// @param amount - Amount - number
     trigger onBurn(from:address, to:address, symbol:string, amount:number)
     {
         // check if nft infused
@@ -650,7 +650,7 @@ nft ghostNft<ghostRom, ghostRam> {
 		// return rom.creator;
 	}
 
-	property royalty:number {
+	property royalty:decimal<2> {
 		// return rom.royalty;
 	}
 
