@@ -132,7 +132,6 @@ token GHOST {
     property name:string = "GhostMarket NFT";
     // token version
     property version:string = "1.0";
-
     // token is transferable
     property isTransferable:bool = true;
     // token is not fungible
@@ -141,20 +140,20 @@ token GHOST {
     property isBurnable:bool = true;
     // token has no max supply
     property maxSupply:number = 0;
-    // get current owner address
-    property getAddressOwner:address = _addressOwner;
-    // get current fees multiplier
-    property getFeesMultiplier:number = _feesMultiplier;
-	// get current fees symbol
-    property getFeesSymbol:string = _feesSymbol;
-    // get current fees threshold1
-    property getFeesThreshold1:number = _feesThreshold1;
-    // get current fees threshold2
-    property getFeesThreshold2:number = _feesThreshold2;
-    // get current fees threshold2
-    property getFeesThreshold3:number = _feesThreshold3;
-	// get current fees address
-    property getFeesAddress:address = _feesAddress;
+    // token owner address
+    property addressOwner:address = _addressOwner;
+    // token fees multiplier
+    property feesMultiplier:number = _feesMultiplier;
+	// token fees symbol
+    property feesSymbol:string = _feesSymbol;
+    // token fees threshold1
+    property feesThreshold1:number = _feesThreshold1;
+    // token fees threshold2
+    property feesThreshold2:number = _feesThreshold2;
+    // token fees threshold2
+    property feesThreshold3:number = _feesThreshold3;
+	// token fees address
+    property feesAddress:address = _feesAddress;
 
     // infuse events
     event InfuseEventMint:infuseEventData = infuseEventMint;
@@ -285,17 +284,6 @@ token GHOST {
 
         // set new status
         _contractPaused:= pause;
-    }
-
-    /// @dev Upgrade the current contract to a new one.
-    /// @param script - The script of the new contract - bytes
-    public upgradeContract(script:bytes)
-    {
-        // check is witness & is current owner
-        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
-
-        // upgrade contract
-        // Runtime.upgradeContract(contract, script) // change by proper method
     }
 
     /// @dev Update the current fees multiplier.
@@ -546,6 +534,15 @@ token GHOST {
 			this.payFees(numOfNfts, creator);
         }
     }
+
+    /// @dev onUpgrade trigger.
+    /// @param from - Address from - address
+	//trigger onUpgrade(from:address) {
+        // check is witness & is current owner
+        // Runtime.expect(from == _addressOwner, "must be owner");
+		// Runtime.expect(Runtime.isWitness(from), "invalid witness");
+        // return;
+    //}
 
     /// @dev onMint trigger.
     /// @param from - Address from - address
