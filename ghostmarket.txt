@@ -71,7 +71,7 @@ struct extendedProperties
 
 // infuse event struct
 struct infuseEventData {
-    // NFT ID - number
+	// NFT ID - number
     nftid:number;
     // Infused asset - string
     symbol:string;
@@ -116,8 +116,8 @@ token GHOST {
     // global storage for contract pause
     global _contractPaused:bool;
     // global storage for fees multiplier
-    global _feesMultiplier:decimal<2>;
-	  // global storage for fees symbol
+    global _feesMultiplier:number;
+	// global storage for fees symbol
     global _feesSymbol:string;
     // global storage for fees threshold1
     global _feesThreshold1:number;
@@ -125,8 +125,8 @@ token GHOST {
     global _feesThreshold2:number;
     // global storage for fees threshold3
     global _feesThreshold3:number;
-	  // global storage for fees address
-	  global _feesAddress:address;
+	// global storage for fees address
+	global _feesAddress:address;
 
     // token name
     property name:string = "GhostMarket NFT";
@@ -144,8 +144,8 @@ token GHOST {
     // get current owner address
     property getAddressOwner:address = _addressOwner;
     // get current fees multiplier
-    property getFeesMultiplier:decimal<2> = _feesMultiplier;
-	  // get current fees symbol
+    property getFeesMultiplier:number = _feesMultiplier;
+	// get current fees symbol
     property getFeesSymbol:string = _feesSymbol;
     // get current fees threshold1
     property getFeesThreshold1:number = _feesThreshold1;
@@ -153,7 +153,7 @@ token GHOST {
     property getFeesThreshold2:number = _feesThreshold2;
     // get current fees threshold2
     property getFeesThreshold3:number = _feesThreshold3;
-	  // get current fees address
+	// get current fees address
     property getFeesAddress:address = _feesAddress;
 
     // infuse events
@@ -163,24 +163,24 @@ token GHOST {
     // libraries import
     import Runtime;
     import Token;
-	  import Map;
-	  import NFT;
+	import Map;
+	import NFT;
 
     // constructor with owner
     constructor(owner:address)
     {
-      _addressOwner:= owner;
-  		_addressContract:= $THIS_ADDRESS;
-  		_contractPaused:= false;
-  		_feesMultiplier:= 100;
-  		_feesSymbol:= "KCAL";
-  		_feesThreshold1:= 10;
-  		_feesThreshold2:= 40;
-  		_feesThreshold3:= 70;
-  		_feesAddress:= @P2KLzxq8cUi47URLZZYcLs54WPVYnknrHWVryUUUqhuhq5K; // ghostmarket
+        _addressOwner:= owner;
+		_addressContract:= $THIS_ADDRESS;
+		_contractPaused:= false;
+		_feesMultiplier:= 1;
+		_feesSymbol:= "KCAL";
+		_feesThreshold1:= 10;
+		_feesThreshold2:= 40;
+		_feesThreshold3:= 70;
+		_feesAddress:= @P2KLzxq8cUi47URLZZYcLs54WPVYnknrHWVryUUUqhuhq5K; // ghostmarket
     }
 
-	  /// @dev Internal method to check if mint limit was reached.
+	/// @dev Internal method to check if mint limit was reached.
     /// @param editionNumber - Number of the NFT in NFT series - number
     /// @param editionMax - Edition Max the NFT series - number
     private checkMintLimitReached(editionNumber:number, editionMax:number):bool
@@ -214,55 +214,55 @@ token GHOST {
         {
             feesBase := 10 * _feesMultiplier;
         }
-    		else {
-      		// if < threshold 2
-    			if (numOfNfts >= _feesThreshold1 & numOfNfts < _feesThreshold2)
-    			{
-    				feesBase:= 25 * _feesMultiplier;
-    			}
-    			else
-    			{
+		else {
+    		// if < threshold 2
+			if (numOfNfts >= _feesThreshold1 & numOfNfts < _feesThreshold2)
+			{
+				feesBase:= 25 * _feesMultiplier;
+			}
+			else
+			{
       			// if < threshold 3
-    				if (numOfNfts >= _feesThreshold2 & numOfNfts < _feesThreshold3)
-    				{
-    					feesBase := 50 * _feesMultiplier;
-    				}
+				if (numOfNfts >= _feesThreshold2 & numOfNfts < _feesThreshold3)
+				{
+					feesBase := 50 * _feesMultiplier;
+				}
         		// if > threshold 3
-    				else
-    				{
-    					feesBase := 100 * _feesMultiplier;
-    				}
-    			}
-    		}
-    return feesBase;
+				else
+				{
+					feesBase := 100 * _feesMultiplier;
+				}
+			}
+		}
+        return feesBase;
     }
 
-	  /// @dev Internal method to check if enough fees based on mint quantity
+	/// @dev Internal method to check if enough fees based on mint quantity
     /// @param numOfNfts - Quantity of NFT to mint - number
-	  /// @param creator - Address trying to mint - address
+	/// @param creator - Address trying to mint - address
     private checkFees(numOfNfts:number, creator:address)
     {
-  		// local decimalsFees:number := 10 ** Token.getDecimals(_feesSymbol); // need math.pow & getDecimals ?
-  		local decimalsFees:number := 10000000000;
-  		local feesBaseResult:number := this.feesBase(numOfNfts);
-  		local serviceFees:number := _feesMultiplier * feesBaseResult;
-  		// Runtime.expect(Token.getBalance(creator, _feesSymbol) > serviceFees * decimalsFees * 10 ** Token.getDecimals(_feesSymbol), "not enough fees to pay for this mint transaction"); // need math.pow & getDecimals ?
-  		Runtime.expect(Token.getBalance(creator, _feesSymbol) > serviceFees * decimalsFees * 10000000000, "not enough fees to pay for this mint transaction");
+		// local decimalsFees:number := 10 ** Token.getDecimals(_feesSymbol); // need math.pow & getDecimals ?
+		local decimalsFees:number := 10000000000;
+		local feesBaseResult:number := this.feesBase(numOfNfts);
+		local serviceFees:number := _feesMultiplier * feesBaseResult;
+		// Runtime.expect(Token.getBalance(creator, _feesSymbol) > serviceFees * decimalsFees * 10 ** Token.getDecimals(_feesSymbol), "not enough fees to pay for this mint transaction"); // need math.pow & getDecimals ?
+		Runtime.expect(Token.getBalance(creator, _feesSymbol) > serviceFees * decimalsFees * 10000000000, "not enough fees to pay for this mint transaction");
     }
 
-	  /// @dev Internal method to transfer fees based on mint quantity
+	/// @dev Internal method to transfer fees based on mint quantity
     /// @param numOfNfts - Quantity of NFT to mint - number
-	  /// @param creator - Address trying to mint - address
+	/// @param creator - Address trying to mint - address
     private payFees(numOfNfts:number, creator:address)
     {
-  		// local decimalsFees:number := 10 ** Token.getDecimals(_feesSymbol); // need math.pow & getDecimals ?
-  		local decimalsFees:number := 10000000000;
-  		local feesBaseResult:number := this.feesBase(numOfNfts);
-  		local serviceFees:number := _feesMultiplier * feesBaseResult;
-  		// Token.transfer(creator, _feesAddress, _feesSymbol, serviceFees * decimalsFees); // need math.pow & getDecimals ?
-  		// Token.burn(creator, _feesSymbol, serviceFees); // need math.pow & getDecimals ?
-  		Token.transfer(creator, _feesAddress, _feesSymbol, serviceFees * decimalsFees * 10000000000);
-  		Token.burn(creator, _feesSymbol, serviceFees * 10000000000);
+		// local decimalsFees:number := 10 ** Token.getDecimals(_feesSymbol); // need math.pow & getDecimals ?
+		local decimalsFees:number := 10000000000;
+		local feesBaseResult:number := this.feesBase(numOfNfts);
+		local serviceFees:number := _feesMultiplier * feesBaseResult;
+		// Token.transfer(creator, _feesAddress, _feesSymbol, serviceFees * decimalsFees); // need math.pow & getDecimals ?
+		// Token.burn(creator, _feesSymbol, serviceFees); // need math.pow & getDecimals ?
+		Token.transfer(creator, _feesAddress, _feesSymbol, serviceFees * decimalsFees * 10000000000);
+		Token.burn(creator, _feesSymbol, serviceFees * 10000000000);
     }
 
     /// @dev Update the current token contract owner address to another address.
@@ -299,8 +299,8 @@ token GHOST {
     }
 
     /// @dev Update the current fees multiplier.
-    /// @param feesMultiplier - number to use to multiply base fees - decimal<2>
-    public updateFeesMultiplier(feesMultiplier:decimal<2>)
+    /// @param feesMultiplier - number to use to multiply base fees - number
+    public updateFeesMultiplier(feesMultiplier:number)
     {
         // check is witness & is current owner
         Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
@@ -312,7 +312,7 @@ token GHOST {
         _feesMultiplier:= feesMultiplier;
     }
 
-	  /// @dev Update the current asset used for fees.
+	/// @dev Update the current asset used for fees.
     /// @param feesSymbol - asset to use to pay fees - string
     public updateFeesSymbol(feesSymbol:string)
     {
@@ -320,7 +320,7 @@ token GHOST {
         Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
 
         // check feesSymbol parameter
-		    Runtime.expect(Token.exists(feesSymbol), "feesSymbol is not a valid token");
+		Runtime.expect(Token.exists(feesSymbol), "feesSymbol is not a valid token");
 
         // set fees
         _feesSymbol:= feesSymbol;
@@ -355,7 +355,7 @@ token GHOST {
         }
     }
 
-	  /// @dev Update the current fees address.
+	/// @dev Update the current fees address.
     /// @param feesAddress - address used to collect fees - address
     public updateFeesAddress(feesAddress:address)
     {
@@ -399,22 +399,22 @@ token GHOST {
         // if fees multiplier > 0, check if enough for transfer fees and burn fees
         if (_feesMultiplier > 0)
         {
-			     this.checkFees(numOfNfts, creator);
+			this.checkFees(numOfNfts, creator);
         }
 
         // check name parameter
-    		Runtime.expect(name.length() >= 3, "invalid name length");
-    		Runtime.expect(name.length() <= 30, "invalid name length");
+		Runtime.expect(name.length() >= 3, "invalid name length");
+		Runtime.expect(name.length() <= 30, "invalid name length");
 
         // check description parameter
-    		Runtime.expect(description.length() >= 10, "invalid name length");
-    		Runtime.expect(description.length() <= 100, "invalid name length");
+		Runtime.expect(description.length() >= 10, "invalid name length");
+		Runtime.expect(description.length() <= 100, "invalid name length");
 
         // check imageURI parameter
         Runtime.expect(imageURI.length() >= 0, "invalid imageURI length");
 
         // check royalty parameter
-        Runtime.expect(royalty >= 0 & royalty <= 10000, "invalid number for royalties, it has to be between 0 and 10000");
+        Runtime.expect(royalty >= 0.00 & royalty <= 100.00, "invalid number for royalties, it has to be between 0.00 and 100.00");
 
         // check infusedAsset parameter // allow array?
         Runtime.expect(Token.exists(infusedAsset), "infusedAsset is not a valid token");
@@ -462,18 +462,18 @@ token GHOST {
         Runtime.expect(editionMax >= 0, "invalid number for editionMax, it has to be >= 0");
 
         // check name parameter
-    		Runtime.expect(name.length() >= 3, "invalid name length");
-    		Runtime.expect(name.length() <= 30, "invalid name length");
+		Runtime.expect(name.length() >= 3, "invalid name length");
+		Runtime.expect(name.length() <= 30, "invalid name length");
 
         // check description parameter // reduce description length?
-    		Runtime.expect(description.length() >= 10, "invalid description length");
-    		Runtime.expect(description.length() <= 100, "invalid description length");
+		Runtime.expect(description.length() >= 10, "invalid description length");
+		Runtime.expect(description.length() <= 100, "invalid description length");
 
         // check imageURI parameter
         Runtime.expect(imageURI.length() >= 0, "invalid imageURI length");
 
         // check royalty parameter
-        Runtime.expect(royalty >= 0 & royalty <= 10000, "invalid number for royalties, it has to be between 0 and 10000");
+        Runtime.expect(royalty >= 0.00 & royalty <= 100.00, "invalid number for royalties, it has to be between 0.00 and 100.00");
 
         // check infusedAsset parameter // allow array?
         Runtime.expect(Token.exists(infusedAsset), "infusedAsset is not a valid token");
@@ -543,7 +543,7 @@ token GHOST {
         // if feesMultipler > 0, pay service fees & pay burn fees
         if (_feesMultiplier > 0)
         {
-		       this.payFees(numOfNfts, creator);
+			this.payFees(numOfNfts, creator);
         }
     }
 
