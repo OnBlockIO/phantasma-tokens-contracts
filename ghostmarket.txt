@@ -82,6 +82,8 @@ struct extended
 token GHOST {
     // global storage for owner address
     global _addressOwner:address;
+    // global storage for contract address
+    global _addressContract:address;
     // global storage for nft edition
     global _seriesMap:storage_map<number, seriesInfo>;
     // global storage for contract pause
@@ -139,6 +141,7 @@ token GHOST {
     constructor(owner:address)
     {
         _addressOwner:= owner;
+        _addressContract:= $THIS_ADDRESS;
 		_contractPaused:= false;
 		_feesMultiplier:= 1;
 		_feesSymbol:= "KCAL";
@@ -213,7 +216,10 @@ token GHOST {
 		local decimalsFees:number := 10 ^ Token.getDecimals(_feesSymbol);
 		local feesBaseResult:number := this.feesBase(numOfNfts);
 		local serviceFees:number := _feesMultiplier * feesBaseResult;
-		Runtime.expect(Token.getBalance(creator, _feesSymbol) > serviceFees * decimalsFees * 10 ^ Token.getDecimals(_feesSymbol), "not enough fees to pay for this mint transaction");
+        local feesBalance:number := Token.getBalance(creator, _feesSymbol);
+        local feesRequired:number := serviceFees * decimalsFees * 10 ^ Token.getDecimals(_feesSymbol);
+        local missingFees:number := feesBalance - feesRequired;
+		Runtime.expect(missingFees > 0, "not enough fees to pay for this mint transaction, requires " + missingFees + " more " + _feesSymbol);
     }
 
 	/// @dev Internal method to transfer fees based on mint quantity
@@ -258,7 +264,7 @@ token GHOST {
         Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
 
         // check feesMultiplier parameter
-        Runtime.expect(feesMultiplier > 0, "invalid number for feesMultiplier, it should be > 0");
+        Runtime.expect(feesMultiplier > 0, "invalid number for feesMultiplier, it should be > 0, received " + feesMultiplier);
 
         // set fees
         _feesMultiplier:= feesMultiplier;
@@ -272,7 +278,7 @@ token GHOST {
         Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
 
         // check feesSymbol parameter
-		Runtime.expect(Token.exists(feesSymbol), "feesSymbol is not a valid token ");
+		Runtime.expect(Token.exists(feesSymbol), "invalid token for feesSymbol, received " + feesSymbol);
 
         // set fees
         _feesSymbol:= feesSymbol;
@@ -287,11 +293,11 @@ token GHOST {
         Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
 
         // check feesThresholdIndex parameter
-        Runtime.expect(feesThresholdIndex <= 3, "invalid number for feesThresholdIndex, it has to be 1,2 or 3");
-        Runtime.expect(feesThresholdIndex > 0, "invalid number for feesThresholdIndex, it has to be 1,2 or 3");
+        Runtime.expect(feesThresholdIndex <= 3, "invalid number for feesThresholdIndex, it should be 1,2 or 3, received " + feesThresholdIndex);
+        Runtime.expect(feesThresholdIndex > 0, "invalid number for feesThresholdIndex, it should be 1,2 or 3, received " + feesThresholdIndex);
 
         // check feesThresholdValue parameter
-        Runtime.expect(feesThresholdValue > 0, "invalid number for feesThresholdValue, it has to be > 0");
+        Runtime.expect(feesThresholdValue > 0, "invalid number for feesThresholdValue, it should be > 0, received " + feesThresholdValue);
 
         // set fees
         if (feesThresholdIndex == 1)
@@ -329,41 +335,41 @@ token GHOST {
         Runtime.expect(Runtime.isWitness(creator), "invalid witness");
 
         // check allow gas dapp transaction fees
-        Runtime.expect(Runtime.gasTarget() == $THIS_ADDRESS, "invalid dapp destination address transaction fees, expected");
+        Runtime.expect(Runtime.gasTarget() == _addressContract, "invalid address for dapp transaction fees in AllowGas, it should be " + _addressContract);
 
         // check editionId parameter
-        Runtime.expect(editionId == 0, "invalid number for editionId, it has to be 0");
+        Runtime.expect(editionId == 0, "invalid number for editionId, it should be 0, received " + editionId);
 
         // check editionMax parameter
-        Runtime.expect(editionMax >= 0, "invalid number for editionMax, it has to be >= 0");
+        Runtime.expect(editionMax >= 0, "invalid number for editionMax, it should be >= 0, received " + editionMax);
 
         // check name parameter
-		Runtime.expect(name.length() >= 3, "invalid name length");
-		Runtime.expect(name.length() <= 30, "invalid name length");
+		Runtime.expect(name.length() >= 3, "invalid char length for name, it should be >= 3, received " + name.length());
+		Runtime.expect(name.length() <= 30, "invalid char length for name, it should be <= 30, received " + name.length());
 
-        // check description parameter // reduce description length?
-		Runtime.expect(description.length() >= 10, "invalid description length");
-		Runtime.expect(description.length() <= 100, "invalid description length");
+        // check description parameter
+		Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
+		Runtime.expect(description.length() <= 100, "invalid char length for description, it should be <= 100, received " + description.length());
 
         // check imageURI parameter
-        Runtime.expect(imageURI.length() >= 0, "invalid imageURI length");
+        Runtime.expect(imageURI.length() >= 0, "invalid char length for imageURI, it should be >= 0, received " + imageURI.length());
 
         // check royalty parameter
-        Runtime.expect(royalty >= 0.00 and royalty <= 100.00, "invalid number for royalties, it has to be between 0.00 and 100.00");
+        Runtime.expect(royalty >= 0.00 and royalty <= 100.00, "invalid number for royalties, it should be between 0.00 and 100.00");
 
         // check infoURI parameter
-        Runtime.expect(infoURI.length() >= 0, "invalid infoURI length");
+        Runtime.expect(infoURI.length() >= 0, "invalid char length for infoURI, it should be >= 0, received " + infoURI.length());
 
         // check extended parameter // how to check that?
         // Runtime.expect(extended.attribute1.length() >= 0, "invalid extended attribute1 length");
 
         // check mintTicker parameter
-		Runtime.expect(Token.exists(mintTicker), "mintTicker is not a valid token");
+		Runtime.expect(Token.exists(mintTicker), "invalid token for mintTicker, received " + mintTicker);
 
         if (hasLockedContent)
         {
             // check hashLockedContent parameter
-            Runtime.expect(lockedContent.length() >= 0, "invalid lockedContent length");
+            Runtime.expect(lockedContent.length() >= 0, "invalid char length for lockedContent, it should be >= 0, received " + lockedContent.length());
         }
 
         //NFT.CreateTokenSeries(_owner, mintTicker, ITEM_SERIES, editionMax, ghostNft);
@@ -371,9 +377,10 @@ token GHOST {
     }
 
 	/// @dev Mint a specific number of NFT in a specific series on GhostMarket contract.
-    private mintSeries(editionId:number, numOfNfts:number, name:string, description:description, imageURI:string, creator:address, royalty:decimal<2>, infoURI:string, extended:struct, mintTicker:string, hasLockedContent:bool, lockedContent:string)
+    //this.mintSeries(editionId, numOfNfts, name, description, imageURI, creator, royalty, infoURI, extended, mintTicker, hasLockedContent, lockedContent);
+    private mintSeries(editionId:number)
     {
-        local index:number := 0;
+        /*local index:number := 0;
         local rom:ghostRom := Struct.ghostRom(editionId, name, description, imageURI, creator, royalty, infoURI, extended, mintTicker, hasLockedContent, lockedContent)
 
         while (index < numOfNfts) {
@@ -395,7 +402,7 @@ token GHOST {
         if (_feesMultiplier > 0)
         {
 			this.payFees(numOfNfts, creator);
-        }
+        }*/
     }
 
     /// @dev Mint a specific number of NFT on GhostMarket contract.
@@ -421,16 +428,16 @@ token GHOST {
         Runtime.expect(Runtime.isWitness(creator), "invalid witness");
 
         // check allow gas dapp transaction fees
-        Runtime.expect(Runtime.gasTarget() == $THIS_ADDRESS, "invalid dapp destination address transaction fees");
+        Runtime.expect(Runtime.gasTarget() == _addressContract, "invalid address for dapp transaction fees in AllowGas, it should be " + _addressContract);
 
         // check editionId parameter
-        Runtime.expect(editionId >= 0, "invalid number for editionId, it has to be >= 0");
+        Runtime.expect(editionId == 0, "invalid number for editionId, it should be 0, received " + editionId);
 
         // check editionMax parameter
-        Runtime.expect(editionMax >= 0, "invalid number for editionMax, it has to be >= 0");
+        Runtime.expect(editionMax >= 0, "invalid number for editionMax, it should be >= 0, received " + editionMax);
 
         // check numOfNfts parameter
-        Runtime.expect(numOfNfts > 0, "invalid number for numOfNfts, it has to be > 0");
+        Runtime.expect(numOfNfts > 0, "invalid number for numOfNfts, it should be > 0, received " + numOfNfts);
 
         // if fees multiplier > 0, check if enough for transfer fees and burn fees
         if (_feesMultiplier > 0)
@@ -439,32 +446,32 @@ token GHOST {
         }
 
         // check name parameter
-		Runtime.expect(name.length() >= 3, "invalid name length");
-		Runtime.expect(name.length() <= 30, "invalid name length");
+		Runtime.expect(name.length() >= 3, "invalid char length for name, it should be >= 3, received " + name.length());
+		Runtime.expect(name.length() <= 30, "invalid char length for name, it should be <= 30, received " + name.length());
 
         // check description parameter
-		Runtime.expect(description.length() >= 10, "invalid name length");
-		Runtime.expect(description.length() <= 100, "invalid name length");
+		Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
+		Runtime.expect(description.length() <= 100, "invalid char length for description, it should be <= 100, received " + description.length());
 
         // check imageURI parameter
-        Runtime.expect(imageURI.length() >= 0, "invalid imageURI length");
+        Runtime.expect(imageURI.length() >= 0, "invalid char length for imageURI, it should be >= 0, received " + imageURI.length());
 
         // check royalty parameter
-        Runtime.expect(royalty >= 0.00 and royalty <= 100.00, "invalid number for royalties, it has to be between 0.00 and 100.00");
+        Runtime.expect(royalty >= 0.00 and royalty <= 100.00, "invalid number for royalties, it should be between 0.00 and 100.00");
 
         // check infoURI parameter
-        Runtime.expect(infoURI.length() >= 0, "invalid infoURI length");
+        Runtime.expect(infoURI.length() >= 0, "invalid char length for infoURI, it should be >= 0, received " + infoURI.length());
 
         // check extended parameter // how to check that?
         // Runtime.expect(extended.attribute1.length() >= 0, "invalid extended attribute1 length");
 
         // check mintTicker parameter
-		Runtime.expect(Token.exists(mintTicker), "mintTicker is not a valid token");
+		Runtime.expect(Token.exists(mintTicker), "invalid token for mintTicker, received " + mintTicker);
 
         if (hasLockedContent)
         {
             // check hashLockedContent parameter
-            Runtime.expect(lockedContent.length() >= 0, "invalid lockedContent length");
+            Runtime.expect(lockedContent.length() >= 0, "invalid char length for lockedContent, it should be >= 0, received " + lockedContent.length());
         }
 
         // check if series already exist
@@ -475,7 +482,7 @@ token GHOST {
         }
 
         // start minting nft
-        this.mintSeries(editionId, numOfNfts, name, description, imageURI, creator, royalty, infoURI, extended, mintTicker, hasLockedContent, lockedContent);
+        this.mintSeries(editionId);
 
     }
 
@@ -484,7 +491,7 @@ token GHOST {
 	trigger onUpgrade(from:address)
     {
         // check is witness and is current owner
-        Runtime.expect(from == _addressOwner, "must be owner");
+        Runtime.expect(from == _addressOwner, "invalid owner address, received " + from + " while it should be " + _addressOwner);
 		Runtime.expect(Runtime.isWitness(from), "invalid witness");
         return;
     }
