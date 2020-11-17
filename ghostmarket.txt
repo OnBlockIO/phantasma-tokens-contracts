@@ -100,12 +100,52 @@ token GHOST {
 	// token fees address
     property feesAddress:address = _feesAddress;
 
+    /// @dev ghostNft struct.
+    nft ghostNft<ghostRom, ghostRam> {
+
+        import Token;
+
+        property created:timestamp { // needed?
+            return _ROM.created;
+        }
+
+        property name:string {
+            return _ROM.name;
+        }
+
+        property description:string {
+            return _ROM.description;
+        }
+
+        property imageURI:string {
+            return _ROM.imageURI;
+        }
+
+        property creator:address {
+            return _ROM.creator;
+        }
+
+        property royalty:decimal<2> {
+            return _ROM.royalty;
+        }
+
+        property infoURI:string {
+            return _ROM.infoURI;
+        }
+
+        property extended:struct {
+            return _ROM.extended;
+        }
+
+    }
+
     // libraries import
     import Runtime;
     import Token;
 	import Map;
 	import NFT;
     import Time;
+    import UID;
 
     // constructor with owner
     constructor(owner:address)
@@ -194,12 +234,16 @@ token GHOST {
     /// @dev Mint a specific number of NFT in a specific series on GhostMarket contract.
     /// @param editionId - ID of the NFT series - number
     /// @param numOfNfts - Quantity of NFT to mint - number
-    private mintSeries(editionId:number, numOfNfts:number, creator:address)
+    /// @param creator - Address trying to mint - address
+    /// @param mintTicker - Ticker token on which to mint the NFT - string
+    private mintSeries(editionId:number, numOfNfts:number, creator:address, mintTicker:string)
     {
+        // local var for loop mint
         local index:number := 0;
 
+        // mint numOfNfts NFT
         while (index < numOfNfts) {
-            // NFT.mint(editionId); // ??
+            NFT.mint(creator, creator, mintTicker, "", "", editionId);
             index := index + 1;
         }
 
@@ -317,7 +361,7 @@ token GHOST {
     /// @param mintTicker - Ticker token on which to mint the NFT - string
     /// @param hasLockedContent - NFT has locked content - bool
     /// @param lockedContent - NFT locked content hash - string
-    public createSeries(editionMax:number, name:string, description:string, imageURI:string, creator:address, royalty:decimal<2>, infoURI:string, extended:struct, mintTicker:string, hasLockedContent:bool, lockedContent:string)
+    public createSeries(editionId:number, editionMax:number, name:string, description:string, imageURI:string, creator:address, royalty:decimal<2>, infoURI:string, extended:struct, mintTicker:string, hasLockedContent:bool, lockedContent:string):number
     {
         // check if contract is active
         Runtime.expect(this.checkContractPaused() != true, "GhostMarket smart contract is currently paused");
@@ -327,6 +371,9 @@ token GHOST {
 
         // check allow gas dapp transaction fees
         Runtime.expect(Runtime.gasTarget() == _addressContract, "invalid address for dapp transaction fees in AllowGas, it should be " + _addressContract);
+
+        // check editionId parameter
+        Runtime.expect(editionId >= 0, "invalid number for editionId, it should be >= 0, received " + editionId);
 
         // check editionMax parameter
         Runtime.expect(editionMax >= 0, "invalid number for editionMax, it should be >= 0, received " + editionMax);
@@ -364,10 +411,8 @@ token GHOST {
             Runtime.expect(lockedContent.length() >= 0, "invalid char length for lockedContent, it should be >= 0, received " + lockedContent.length());
         }
 
-        // create series ID
-        // editionID = ???
-
-        // NFT.CreateTokenSeries(_addressOwner, mintTicker, editionID, editionMax, TokenSeries.Duplicated, ghostNft);
+        // create series
+        NFT.createSeries(_addressOwner, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
 
     }
 
@@ -447,12 +492,15 @@ token GHOST {
         // check if it's a new series
         if (editionId == 0)
         {
-            // if edition id == 0, means it's a new series and we create one
-            this.createSeries(editionMax, name, description, imageURI, creator, royalty, infoURI, extended, mintTicker, hasLockedContent, lockedContent);
+            // new series - create series ID
+            editionId := UID.generate();
+
+            // new series - create series
+            this.createSeries(editionId, editionMax, name, description, imageURI, creator, royalty, infoURI, extended, mintTicker, hasLockedContent, lockedContent);
         }
 
         // start minting nft
-        this.mintSeries(editionId, numOfNfts, creator);
+        this.mintSeries(editionId, numOfNfts, creator, mintTicker);
 
     }
 
@@ -464,45 +512,6 @@ token GHOST {
         Runtime.expect(from == _addressOwner, "invalid owner address, received " + from + " while it should be " + _addressOwner);
 		Runtime.expect(Runtime.isWitness(from), "invalid witness");
         return;
-    }
-
-    /// @dev ghostNft struct.
-    nft ghostNft<ghostRom, ghostRam> {
-
-        import Token;
-
-        property created:timestamp {
-            return _ROM.created;
-        }
-
-        property name:string {
-            return _ROM.name;
-        }
-
-        property description:string {
-            return _ROM.description;
-        }
-
-        property imageURI:string {
-            return _ROM.imageURI;
-        }
-
-        property creator:address {
-            return _ROM.creator;
-        }
-
-        property royalty:decimal<2> {
-            return _ROM.royalty;
-        }
-
-        property infoURI:string {
-            return _ROM.infoURI;
-        }
-
-        property extended:struct {
-            return _ROM.extended;
-        }
-
     }
 
 }
