@@ -108,7 +108,7 @@ token GHOST {
     // burn rewards symbol
     property burnRewardsAmount:number = _burnRewardsAmount;
 	// burn rewards amount
-    property burnRewardsSymbol:address = _burnRewardsSymbol;
+    property burnRewardsSymbol:string = _burnRewardsSymbol;
 
     /// @dev ghostNft struct.
     nft ghostNft<ghostRom, ghostRam> {
