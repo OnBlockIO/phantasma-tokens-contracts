@@ -10,15 +10,15 @@ struct ghostRom
     // Original owner of the NFT - address
     creator:address;
     // Commission (in %) for the royalties - decimal<2>
-    royalty:decimal<2>;
+    royalties:decimal<2>;
     // Name of the NFT - string
     name:string;
     // Description of the NFT - string
     description:string;
     // Image of the NFT - IPFS hash - string
-    imageURI:string;
-    // Info URI of the NFT for extended properties - string
-    infoURI:string;
+    imageURL:string;
+    // Info URL of the NFT for extended properties - string
+    infoURL:string;
     // Extended attribute1 type - string
     attributeType1:string;
     // Extended attribute1 value - string
@@ -31,10 +31,6 @@ struct ghostRom
     attributeType3:string;
     // Extended attribute3 value - string
     attributeValue3:string;
-    // Extended attribute4 type - string
-    attributeType4:string;
-    // Extended attribute4 value - string
-    attributeValue4:string;
 }
 
 // ghostRam struct
@@ -49,7 +45,7 @@ token GHOST {
     // global storage for owner address
     global _addressOwner:address;
     // global storage for contract address
-    global _addressContract:address;    
+    global _addressContract:address;
     // global storage for contract name
     global _contractName:string;
     // global storage for contract pause
@@ -115,8 +111,8 @@ token GHOST {
             return _ROM.creator;
         }
 
-        property royalty:decimal<2> {
-            return _ROM.royalty;
+        property royalties:decimal<2> {
+            return _ROM.royalties;
         }
 
         property name:string {
@@ -127,12 +123,12 @@ token GHOST {
             return _ROM.description;
         }
 
-        property imageURI:string {
-            return _ROM.imageURI;
+        property imageURL:string {
+            return _ROM.imageURL;
         }
 
-        property infoURI:string {
-            return _ROM.infoURI;
+        property infoURL:string {
+            return _ROM.infoURL;
         }
 
         property attributeType1:string {
@@ -159,14 +155,6 @@ token GHOST {
             return _ROM.attributeValue3;
         }
 
-        property attributeType4:string {
-            return _ROM.attributeType4;
-        }
-
-        property attributeValue4:string {
-            return _ROM.attributeValue4;
-        }
-
     }
 
     // libraries import
@@ -176,6 +164,7 @@ token GHOST {
 	import NFT;
     import Time;
     import UID;
+    import Call;
 
     // constructor with owner
     constructor(owner:address)
@@ -305,12 +294,12 @@ token GHOST {
         if (editionMode == 1)
         {
             // create series duplicated
-            // NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
+            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
         }
         else
         {
             // create series unique
-            // NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, ghostNft);
+            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, ghostNft);
         }
 
     }
@@ -318,47 +307,63 @@ token GHOST {
     /// @dev Mint a specific number of NFT in a series with unique content.
     /// @param editionId - ID of the NFT series - number
     /// @param creator - Original owner of the NFT - address
-    /// @param royalty - Commission (in %) for the royalties - decimal<2>
+    /// @param royalties - Commission (in %) for the royalties - decimal<2>
     /// @param mintTicker - Ticker token on which to mint the NFT - string
     /// @param numOfNfts - Quantity of NFT to mint - number
     /// @param name - Name of the NFT to mint - string
     /// @param description - Description of the NFT to mint - string
-    /// @param imageURI - Image of the NFT - IPFS hash - string
-    /// @param infoURI - Token URI of the NFT - string
+    /// @param imageURL - Image URL of the NFT - IPFS hash - string
+    /// @param infoURL - Token URL of the NFT - string
     /// @param attributeType1 - Extended properties of the NFT - string
     /// @param attributeValue1 - Extended properties of the NFT - string
     /// @param attributeType2 - Extended properties of the NFT - string
     /// @param attributeValue2 - Extended properties of the NFT - string
     /// @param attributeType3 - Extended properties of the NFT - string
     /// @param attributeValue3 - Extended properties of the NFT - string
-    /// @param attributeType4 - Extended properties of the NFT - string
-    /// @param attributeValue4 - Extended properties of the NFT - string
     /// @param hasLockedContent - NFT has locked content - bool
     /// @param lockedContent - NFT locked content hash - string
-    private mintSeries(editionId:number, creator:address, royalty:decimal<2>, mintTicker:string, numOfNfts:number, name:string, description:string, imageURI:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, attributeType4:string, attributeValue4:string, hasLockedContent:bool, lockedContent:string)
+    /// @param isOnSale - NFT is on sale - bool
+    /// @param listPrice - NFT listing price - number
+    /// @param listPriceCurrency - NFT listing price currency - string
+    /// @param listLastEndDate - NFT listing end date - timestamp
+    /// @param isInfused - NFT is infused - bool
+    /// @param infusedAsset - NFT infuse asset - string
+    /// @param infusedAmount - NFT infuse amount - number
+    private mintSeries(editionId:number, creator:address, royalties:decimal<2>, mintTicker:string, numOfNfts:number, name:string, description:string, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, hasLockedContent:bool, lockedContent:string, isOnSale:bool, listPrice:number, listPriceCurrency:string, listLastEndDate:timestamp, isInfused:bool, infusedAsset:string, infusedAmount:number)
     {
         // local var for loop mint
         local index:number := 0;
 
-        // local var for infoURI
-        local infoURI:string := "";
-
         // local var for rom
-        local rom:ghostRom := Struct.ghostRom(Time.now(), creator, royalty, name, description, imageURI, infoURI, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, attributeType4, attributeValue4);
+        local rom:ghostRom := Struct.ghostRom(Time.now(), creator, royalties, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3);
 
         // mint numOfNfts NFT
         while (index < numOfNfts) {
             // mint NFT
             local tokenID:number := NFT.mint(creator, creator, mintTicker, rom, "", editionId);
-            // if infuseMultiplier > 0
-            if (_infuseMultiplier > 0)
+            // infuse min value if user does not want to infuse
+            if (_infuseMultiplier > 0 and !isInfused)
             {
                 // local var for infuseAmount
                 local infuseAmount:number := _infuseMultiplier * 10 ^ Token.getDecimals(_feesSymbol);
-                // infuse NFT
+                // infuse NFT with min value
                 NFT.infuse(creator, mintTicker, tokenID, _feesSymbol, infuseAmount);
             }
-            // if locked content
+            // if user wants to infuse
+            if (isInfused)
+            {
+                // local var for infuseAmount
+                local infuseAmount:number := infusedAmount * 10 ^ Token.getDecimals(infusedAsset);
+                // infuse NFT with user value
+                NFT.infuse(creator, mintTicker, tokenID, infusedAsset, infuseAmount);
+            }
+            // if user wants to sell
+            if (isOnSale)
+            {
+                // sell token based on user choice
+                Call.contract("market", "SellToken", creator, mintTicker, listPriceCurrency, tokenID, listPrice, listLastEndDate);
+            }
+            // if user wants locked content
             if (hasLockedContent)
             {
                 // set locked content storage map
@@ -488,23 +493,29 @@ token GHOST {
     /// @param editionMax - Edition Max the NFT series - number
     /// @param editionMode - Edition Mode the NFT series, 1 for duplicate, 2 for unique - number
     /// @param creator - Original owner of the NFT - address
-    /// @param royalty - Commission (in %) for the royalties - decimal<2>
+    /// @param royalties - Commission (in %) for the royalties - decimal<2>
     /// @param mintTicker - Ticker token on which to mint the NFT - string
     /// @param numOfNfts - Quantity of NFT to mint - number
     /// @param name - Name of the NFT to mint - string
     /// @param description - Description of the NFT to mint - string
-    /// @param imageURI - Image of the NFT - IPFS hash - string
+    /// @param imageURL - Image URL of the NFT - IPFS hash - string
+    /// @param infoURL - Token URL of the NFT - External API - string
     /// @param attributeType1 - Extended properties of the NFT - string
     /// @param attributeValue1 - Extended properties of the NFT - string
     /// @param attributeType2 - Extended properties of the NFT - string
     /// @param attributeValue2 - Extended properties of the NFT - string
     /// @param attributeType3 - Extended properties of the NFT - string
     /// @param attributeValue3 - Extended properties of the NFT - string
-    /// @param attributeType4 - Extended properties of the NFT - string
-    /// @param attributeValue4 - Extended properties of the NFT - string
     /// @param hasLockedContent - NFT has locked content - bool
     /// @param lockedContent - NFT locked content hash - string
-    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, royalty:decimal<2>, mintTicker:string, numOfNfts:number, name:string, description:string, imageURI:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, attributeType4:string, attributeValue4:string, hasLockedContent:bool, lockedContent:string)
+    /// @param isOnSale - NFT is on sale - bool
+    /// @param listPrice - NFT listing price - number
+    /// @param listPriceCurrency - NFT listing price currency - string
+    /// @param listLastEndDate - NFT listing end date - timestamp
+    /// @param isInfused - NFT is infused - bool
+    /// @param infusedAsset - NFT infuse asset - string
+    /// @param infusedAmount - NFT infuse amount - number
+    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, royalties:decimal<2>, mintTicker:string, numOfNfts:number, name:string, description:string, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, hasLockedContent:bool, lockedContent:string, isOnSale:bool, listPrice:number, listPriceCurrency:string, listLastEndDate:timestamp, isInfused:bool, infusedAsset:string, infusedAmount:number)
     {
         // check if contract is active
         Runtime.expect(this.checkContractPaused() != true, "GhostMarket smart contract is currently paused");
@@ -540,11 +551,14 @@ token GHOST {
             Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
             Runtime.expect(description.length() <= 100, "invalid char length for description, it should be <= 100, received " + description.length());
 
-            // check imageURI parameter
-            Runtime.expect(imageURI.length() >= 0, "invalid char length for imageURI, it should be >= 0, received " + imageURI.length());
+            // check imageURL parameter
+            Runtime.expect(imageURL.length() >= 0, "invalid char length for imageURL, it should be >= 0, received " + imageURL.length());
 
-            // check royalty parameter
-            Runtime.expect(royalty >= 0.00 and royalty <= 50.00, "invalid number for royalties, it should be between 0.00 and 50.00");
+            // check infoURL parameter
+            Runtime.expect(infoURL.length() >= 0, "invalid char length for infoURL, it should be >= 0, received " + infoURL.length());
+
+            // check royalties parameter
+            Runtime.expect(royalties >= 0.00 and royalties <= 50.00, "invalid number for royalties, it should be between 0.00 and 50.00");
 
             // check extended parameters
             if (attributeType1.length() > 0)
@@ -574,15 +588,6 @@ token GHOST {
                 Runtime.expect(attributeType3.length() > 0, "invalid extended attributeType3 length");
                 Runtime.expect(attributeValue3.length() < 15, "invalid extended attributeValue3 length");
             }
-            if (attributeType4.length() > 0)
-            {
-                Runtime.expect(attributeType4.length() < 15, "invalid extended attributeType4 length");
-            }
-            if (attributeValue4.length() > 0)
-            {
-                Runtime.expect(attributeType4.length() > 0, "invalid extended attributeType4 length");
-                Runtime.expect(attributeValue4.length() < 15, "invalid extended attributeValue4 length");
-            }
 
             // check hashLockedContent parameter
             if (hasLockedContent)
@@ -593,6 +598,22 @@ token GHOST {
             {
                 Runtime.expect(lockedContent.length() == 0, "invalid char length for lockedContent, it should be == 0, received " + lockedContent.length());
             }
+
+            // check listPrice parameter
+            Runtime.expect(listPrice >= 0, "invalid number for listPrice, it should be >= 0, received " + listPrice);
+
+            // check listPriceCurrency parameter
+            Runtime.expect(Token.exists(listPriceCurrency), "invalid token for listPriceCurrency, received " + listPriceCurrency);
+            local flagsSell:TokenFlags := Token.getFlags(listPriceCurrency);
+            Runtime.expect(flagsSell.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + listPriceCurrency);
+
+            // check infusedAsset parameter
+            Runtime.expect(Token.exists(infusedAsset), "invalid token for infusedAsset, received " + infusedAsset);
+            local flagsInfuse:TokenFlags := Token.getFlags(infusedAsset);
+            Runtime.expect(flagsInfuse.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + infusedAsset);
+
+            // check infusedAmount parameter
+            Runtime.expect(infusedAmount >= 0, "invalid number for infusedAmount, it should be >= 0, received " + infusedAmount);
 
             // new series - create series ID
             editionId := UID.generate();
@@ -616,17 +637,18 @@ token GHOST {
         }
 
         // start minting nft in nft series
-        this.mintSeries(editionId, creator, royalty, mintTicker, numOfNfts, name, description, imageURI, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, attributeType4, attributeValue4, hasLockedContent, lockedContent);
+        this.mintSeries(editionId, creator, royalties, mintTicker, numOfNfts, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, hasLockedContent, lockedContent, isOnSale, listPrice, listPriceCurrency, listLastEndDate, isInfused, infusedAsset, infusedAmount);
     }
 
     /// @dev get locked content of a specific nft series.
     /// @param from - Address querying for content - address
+    /// @param nftSymbol - Symbol of the NFT to query for content - string
     /// @param nftID - Locked content of a specific NFT - number
     public getLockedContent(from:address, nftSymbol: string, nftID:number):string
     {
         // check is witness and is current owner
         local nftInfo:NFT := NFT.read(nftSymbol, nftID);
-        Runtime.expect(from == nftInfo.Owner, "invalid owner address, received " + from + " while it should be "); // how to get current owner??
+        Runtime.expect(from == nftInfo.Owner, "invalid owner address, received " + from + " while it should be " + nftInfo.Owner);
 		Runtime.expect(Runtime.isWitness(from), "invalid witness");
 
         // return content if owner
@@ -653,11 +675,14 @@ token GHOST {
     /// @param from - Amount - number
     trigger onMint(from:address, to:address, symbol:string, amount:number)
     {
-        Runtime.expect(Runtime.context() == _contractName, "on mint not executed from within contract");
+        Runtime.expect(Runtime.context() == _contractName, "minting a nft is only supported from within " + _contractName + " contract");
     }
-    
-    trigger onSeries(from: address) {
-        Runtime.expect(Runtime.context() == _contractName, "onCreateSeries not executed from within contract");
+
+    /// @dev onSeries trigger.
+    /// @param from - Address from - address
+    trigger onSeries(from: address)
+    {
+        Runtime.expect(Runtime.context() == _contractName, "creating a series is only supported from within " + _contractName + " contract");
     }
 
 }
