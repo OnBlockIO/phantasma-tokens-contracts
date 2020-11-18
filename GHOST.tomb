@@ -22,7 +22,7 @@ struct ghostRom
     // Extended properties - custom struct
     extended:struct;
     // Locked content properties - string
-    lockedContent:struct;
+    lockedContent:string;
 }
 
 // ghostRam struct
@@ -403,12 +403,12 @@ token GHOST {
         if (editionMode == 1)
         {
             // create series duplicated
-            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
+            // NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
         }
         else
         {
             // create series unique
-            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, ghostNft);
+            // NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, ghostNft);
         }
 
     }
@@ -506,7 +506,7 @@ token GHOST {
         }
 
         // start minting nft in nft series
-        this.mintSeries(editionId, editionMode, numOfNfts, name, description, imageURI, creator, royalty, infoURI, extended, mintTicker, hasLockedContent, lockedContent);
+        this.mintSeries(editionId, numOfNfts, name, description, imageURI, creator, royalty, infoURI, extended, mintTicker, hasLockedContent, lockedContent);
     }
 
     /// @dev onUpgrade trigger.
