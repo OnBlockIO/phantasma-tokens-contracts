@@ -35,8 +35,6 @@ struct ghostRom
     attributeType4:string;
     // Extended attribute4 value - string
     attributeValue4:string;
-    // Locked content properties - string
-    lockedContent:string;
 }
 
 // ghostRam struct
@@ -47,12 +45,15 @@ struct ghostRam
 
 // ghost token contract
 token GHOST {
+
     // global storage for owner address
     global _addressOwner:address;
     // global storage for contract address
     global _addressContract:address;
     // global storage for contract pause
     global _contractPaused:bool;
+    // global storage for locked content
+    global _lockedStorageMap: storage_map<number, string>;
     // global storage for fees multiplier
     global _feesMultiplier:number;
 	// global storage for fees symbol
@@ -164,10 +165,6 @@ token GHOST {
             return _ROM.attributeValue4;
         }
 
-        property lockedContent:string {
-            return _ROM.lockedContent;
-        }
-
     }
 
     // libraries import
@@ -242,10 +239,8 @@ token GHOST {
 	/// @param creator - Address trying to mint - address
     private checkFees(numOfNfts:number, creator:address)
     {
-		local decimalsFees:number := 10 ^ Token.getDecimals(_feesSymbol);
-		local feesBaseResult:number := this.feesBase(numOfNfts);
         local feesBalance:number := Token.getBalance(creator, _feesSymbol);
-        local feesRequired:number := feesBaseResult * decimalsFees;
+        local feesRequired:number := this.feesBase(numOfNfts) * 10 ^ Token.getDecimals(_feesSymbol);
         local missingFees:number := feesBalance - feesRequired;
         // check required fees missing, if any
 		Runtime.expect(missingFees > 0, "not enough fees to pay for this mint transaction, requires " + missingFees + " more " + _feesSymbol);
@@ -256,13 +251,18 @@ token GHOST {
 	/// @param creator - Address trying to mint - address
     private payFees(numOfNfts:number, creator:address)
     {
-		local decimalsFees:number := 10 ^ Token.getDecimals(_feesSymbol);
+        // calculate fees base
 		local feesBaseResult:number := this.feesBase(numOfNfts);
-        local feesFinal:number := feesBaseResult * decimalsFees;
+        // calculate infuse
+        local infuseAmount:number := _infuseMultiplier * 10 ^ Token.getDecimals(_feesSymbol);
+        // calculate fees minus infuse
+        local feesTransfer:number := (feesBaseResult * 10 ^ Token.getDecimals(_feesSymbol)) - infuseAmount;
+        // calculate fees burn
+        local feesBurn:number := feesBaseResult * 10 ^ Token.getDecimals(_feesSymbol);
         // fees payment
-        Token.transfer(creator, _feesAddress, _feesSymbol, feesFinal);
+        Token.transfer(creator, _feesAddress, _feesSymbol, feesTransfer);
         // fees burn
-		Token.burn(creator, _feesSymbol, feesFinal);
+		Token.burn(creator, _feesSymbol, feesBurn);
     }
 
     /// @dev Create a new NFT series.
@@ -341,7 +341,7 @@ token GHOST {
         local infoURI:string := "";
 
         // local var for rom
-        local rom:ghostRom := Struct.ghostRom(Time.now(), creator, royalty, name, description, imageURI, infoURI, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, attributeType4, attributeValue4, lockedContent);
+        local rom:ghostRom := Struct.ghostRom(Time.now(), creator, royalty, name, description, imageURI, infoURI, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, attributeType4, attributeValue4);
 
         // mint numOfNfts NFT
         while (index < numOfNfts) {
@@ -350,8 +350,16 @@ token GHOST {
             // if infuseMultiplier > 0
             if (_infuseMultiplier > 0)
             {
+                // local var for infuseAmount
+                local infuseAmount:number := _infuseMultiplier * 10 ^ Token.getDecimals(_feesSymbol);
                 // infuse NFT
-                NFT.infuse(creator, mintTicker, tokenID, _feesSymbol, _feesMultiplier);
+                NFT.infuse(creator, mintTicker, tokenID, _feesSymbol, infuseAmount);
+            }
+            // if locked content
+            if (hasLockedContent)
+            {
+                // set locked content storage map
+                _lockedStorageMap.set(tokenID, lockedContent);
             }
             index := index + 1;
         }
@@ -468,7 +476,7 @@ token GHOST {
         // check infuseMultiplier parameter
         Runtime.expect(infuseMultiplier >= 0, "invalid number for infuseMultiplier, it should be >= 0, received " + infuseMultiplier);
 
-        // set fees
+        // set infuse multiplier
         _infuseMultiplier := infuseMultiplier;
     }
 
@@ -606,6 +614,22 @@ token GHOST {
 
         // start minting nft in nft series
         this.mintSeries(editionId, creator, royalty, mintTicker, numOfNfts, name, description, imageURI, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, attributeType4, attributeValue4, hasLockedContent, lockedContent);
+    }
+
+    /// @dev get locked content of a specific nft series.
+    /// @param from - Address querying for content - address
+    /// @param nftID - Locked content of a specific NFT - number
+    public getLockedContent(from:address, nftID:number):string
+    {
+        // check is witness and is current owner
+        // Runtime.expect(from == OWNEROF(nftID), "invalid owner address, received " + from + " while it should be " + OWNEROF(nftID)); // how to get current owner??
+		Runtime.expect(Runtime.isWitness(from), "invalid witness");
+
+        // return content if owner
+        if (_lockedStorageMap.has(nftID))
+        {
+            return _lockedStorageMap.get(nftID);
+        }
     }
 
     /// @dev onUpgrade trigger.
