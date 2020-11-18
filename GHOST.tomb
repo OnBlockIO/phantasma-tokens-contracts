@@ -7,18 +7,16 @@ struct ghostRom
 {
     // Date the NFT was created - used to have a unique ID - timestamp
     created:timestamp;
+    // Original owner of the NFT - address
+    creator:address;
+    // Commission (in %) for the royalties - decimal<2>
+    royalty:decimal<2>;
     // Name of the NFT - string
     name:string;
     // Description of the NFT - string
     description:string;
     // Image of the NFT - IPFS hash - string
     imageURI:string;
-    // Image of the NFT - IPFS hash - string
-    tokenURI:string;
-    // Original owner of the NFT - address
-    creator:address;
-    // Commission (in %) for the royalties - decimal<2>
-    royalty:decimal<2>;
     // Info URI of the NFT for extended properties - string
     infoURI:string;
     // Extended attribute1 type - string
@@ -47,7 +45,7 @@ struct ghostRam
 
 }
 
-// ghost contract
+// ghost token contract
 token GHOST {
     // global storage for owner address
     global _addressOwner:address;
@@ -67,10 +65,8 @@ token GHOST {
     global _feesThreshold3:number;
 	// global storage for fees address
 	global _feesAddress:address;
-    // global storage for burn rewards amount
-    global _burnRewardsAmount:number;
-	// global storage for burn rewards symbol
-	global _burnRewardsSymbol:string;
+    // global storage for infuse multiplier
+    global _infuseMultiplier:number;
 
     // token name
     property name:string = "GhostMarket NFT";
@@ -100,18 +96,24 @@ token GHOST {
     property feesThreshold3:number = _feesThreshold3;
 	// token fees address
     property feesAddress:address = _feesAddress;
-    // burn rewards symbol
-    property burnRewardsAmount:number = _burnRewardsAmount;
-	// burn rewards amount
-    property burnRewardsSymbol:string = _burnRewardsSymbol;
+    // token infuse multiplier
+    property infuseMultiplier:number = _infuseMultiplier;
 
-    /// @dev ghostNft struct.
+    /// ghostNft struct
     nft ghostNft<ghostRom, ghostRam> {
 
         import Token;
 
         property created:timestamp {
             return _ROM.created;
+        }
+
+        property creator:address {
+            return _ROM.creator;
+        }
+
+        property royalty:decimal<2> {
+            return _ROM.royalty;
         }
 
         property name:string {
@@ -126,20 +128,40 @@ token GHOST {
             return _ROM.imageURI;
         }
 
-        property tokenURI:string {
-            return _ROM.tokenURI;
-        }
-
-        property creator:address {
-            return _ROM.creator;
-        }
-
-        property royalty:decimal<2> {
-            return _ROM.royalty;
-        }
-
         property infoURI:string {
             return _ROM.infoURI;
+        }
+
+        property attributeType1:string {
+            return _ROM.attributeType1;
+        }
+
+        property attributeValue1:string {
+            return _ROM.attributeValue1;
+        }
+
+        property attributeType2:string {
+            return _ROM.attributeType2;
+        }
+
+        property attributeValue2:string {
+            return _ROM.attributeValue2;
+        }
+
+        property attributeType3:string {
+            return _ROM.attributeType3;
+        }
+
+        property attributeValue3:string {
+            return _ROM.attributeValue3;
+        }
+
+        property attributeType4:string {
+            return _ROM.attributeType4;
+        }
+
+        property attributeValue4:string {
+            return _ROM.attributeValue4;
         }
 
         property lockedContent:string {
@@ -168,8 +190,7 @@ token GHOST {
 		_feesThreshold2:= 40;
 		_feesThreshold3:= 70;
 		_feesAddress:= @P2KLzxq8cUi47URLZZYcLs54WPVYnknrHWVryUUUqhuhq5K; // ghostmarket
-        _burnRewardsSymbol:= "KCAL";
-        _burnRewardsAmount:= 1;
+        _infuseMultiplier:= 1;
     }
 
     /// @dev Internal method to check if the contract is paused.
@@ -226,6 +247,7 @@ token GHOST {
         local feesBalance:number := Token.getBalance(creator, _feesSymbol);
         local feesRequired:number := feesBaseResult * decimalsFees;
         local missingFees:number := feesBalance - feesRequired;
+        // check required fees missing, if any
 		Runtime.expect(missingFees > 0, "not enough fees to pay for this mint transaction, requires " + missingFees + " more " + _feesSymbol);
     }
 
@@ -236,8 +258,11 @@ token GHOST {
     {
 		local decimalsFees:number := 10 ^ Token.getDecimals(_feesSymbol);
 		local feesBaseResult:number := this.feesBase(numOfNfts);
-		Token.transfer(creator, _feesAddress, _feesSymbol, feesBaseResult * decimalsFees);
-		Token.burn(creator, _feesSymbol, feesBaseResult * decimalsFees);
+        local feesFinal:number := feesBaseResult * decimalsFees;
+        // fees payment
+        Token.transfer(creator, _feesAddress, _feesSymbol, feesFinal);
+        // fees burn
+		Token.burn(creator, _feesSymbol, feesFinal);
     }
 
     /// @dev Create a new NFT series.
@@ -289,12 +314,13 @@ token GHOST {
 
     /// @dev Mint a specific number of NFT in a series with unique content.
     /// @param editionId - ID of the NFT series - number
+    /// @param creator - Original owner of the NFT - address
+    /// @param royalty - Commission (in %) for the royalties - decimal<2>
+    /// @param mintTicker - Ticker token on which to mint the NFT - string
     /// @param numOfNfts - Quantity of NFT to mint - number
     /// @param name - Name of the NFT to mint - string
     /// @param description - Description of the NFT to mint - string
     /// @param imageURI - Image of the NFT - IPFS hash - string
-    /// @param creator - Original owner of the NFT - address
-    /// @param royalty - Commission (in %) for the royalties - decimal<2>
     /// @param infoURI - Token URI of the NFT - string
     /// @param attributeType1 - Extended properties of the NFT - string
     /// @param attributeValue1 - Extended properties of the NFT - string
@@ -304,23 +330,29 @@ token GHOST {
     /// @param attributeValue3 - Extended properties of the NFT - string
     /// @param attributeType4 - Extended properties of the NFT - string
     /// @param attributeValue4 - Extended properties of the NFT - string
-    /// @param mintTicker - Ticker token on which to mint the NFT - string
     /// @param hasLockedContent - NFT has locked content - bool
     /// @param lockedContent - NFT locked content hash - string
-    private mintSeries(editionId:number, numOfNfts:number, name:string, description:string, imageURI:string, creator:address, royalty:decimal<2>, infoURI:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, attributeType4:string, attributeValue4:string, mintTicker:string, hasLockedContent:bool, lockedContent:string)
+    private mintSeries(editionId:number, creator:address, royalty:decimal<2>, mintTicker:string, numOfNfts:number, name:string, description:string, imageURI:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, attributeType4:string, attributeValue4:string, hasLockedContent:bool, lockedContent:string)
     {
         // local var for loop mint
         local index:number := 0;
 
-        // local var for tokenURI
-        local tokenURI:string := "";
+        // local var for infoURI
+        local infoURI:string := "";
 
         // local var for rom
-        local rom:ghostRom := Struct.ghostRom(Time.now(), name, description, imageURI, tokenURI, creator, royalty, infoURI, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, attributeType4, attributeValue4, lockedContent);
+        local rom:ghostRom := Struct.ghostRom(Time.now(), creator, royalty, name, description, imageURI, infoURI, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, attributeType4, attributeValue4, lockedContent);
 
         // mint numOfNfts NFT
         while (index < numOfNfts) {
-            NFT.mint(creator, creator, mintTicker, rom, "", editionId);
+            // mint NFT
+            local tokenID:number := NFT.mint(creator, creator, mintTicker, rom, "", editionId);
+            // if infuseMultiplier > 0
+            if (_infuseMultiplier > 0)
+            {
+                // infuse NFT
+                NFT.infuse(creator, mintTicker, tokenID, _feesSymbol, _feesMultiplier);
+            }
             index := index + 1;
         }
 
@@ -426,36 +458,18 @@ token GHOST {
         _feesAddress:= feesAddress;
     }
 
-    /// @dev Update the burn rewards asset.
-    /// @param burnRewardsSymbol - asset used for burn rewards - string
-    public updateBurnRewardsSymbol(burnRewardsSymbol:string)
+    /// @dev Update the infuse multiplier.
+    /// @param infuseMultiplier - multiplier used for infuse - number
+    public updateInfuseMultiplier(infuseMultiplier:number)
     {
         // check is witness and is current owner
         Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
 
-        // check burnRewardsSymbol parameter
-		Runtime.expect(Token.exists(burnRewardsSymbol), "invalid token for burnRewardsSymbol, received " + burnRewardsSymbol);
-
-        // check burnRewardsSymbol is fungible
-        local flags:TokenFlags := Token.getFlags(burnRewardsSymbol);
-        Runtime.expect(flags.isSet(TokenFlags.Fungible) == true, "invalid fungible flag for " + burnRewardsSymbol);
+        // check infuseMultiplier parameter
+        Runtime.expect(infuseMultiplier >= 0, "invalid number for infuseMultiplier, it should be >= 0, received " + infuseMultiplier);
 
         // set fees
-        _burnRewardsSymbol:= burnRewardsSymbol;
-    }
-
-    /// @dev Update the burn rewards amount.
-    /// @param burnRewardsAmount - amount used for burn rewards - number
-    public updateBurnRewardsAmount(burnRewardsAmount:number)
-    {
-        // check is witness and is current owner
-        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
-
-        // check burnRewardsAmount parameter
-        Runtime.expect(burnRewardsAmount >= 0, "invalid number for burnRewardsAmount, it should be >= 0, received " + burnRewardsAmount);
-
-        // set fees
-        _burnRewardsAmount := burnRewardsAmount;
+        _infuseMultiplier := infuseMultiplier;
     }
 
     /// @dev Mint a specific number of NFT on GhostMarket contract.
@@ -463,13 +477,12 @@ token GHOST {
     /// @param editionMax - Edition Max the NFT series - number
     /// @param editionMode - Edition Mode the NFT series, 1 for duplicate, 2 for unique - number
     /// @param creator - Original owner of the NFT - address
+    /// @param royalty - Commission (in %) for the royalties - decimal<2>
     /// @param mintTicker - Ticker token on which to mint the NFT - string
     /// @param numOfNfts - Quantity of NFT to mint - number
     /// @param name - Name of the NFT to mint - string
     /// @param description - Description of the NFT to mint - string
     /// @param imageURI - Image of the NFT - IPFS hash - string
-    /// @param royalty - Commission (in %) for the royalties - decimal<2>
-    /// @param infoURI - Token URI of the NFT - string
     /// @param attributeType1 - Extended properties of the NFT - string
     /// @param attributeValue1 - Extended properties of the NFT - string
     /// @param attributeType2 - Extended properties of the NFT - string
@@ -480,7 +493,7 @@ token GHOST {
     /// @param attributeValue4 - Extended properties of the NFT - string
     /// @param hasLockedContent - NFT has locked content - bool
     /// @param lockedContent - NFT locked content hash - string
-    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, mintTicker:string, numOfNfts:number, name:string, description:string, imageURI:string, royalty:decimal<2>, infoURI:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, attributeType4:string, attributeValue4:string, hasLockedContent:bool, lockedContent:string)
+    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, royalty:decimal<2>, mintTicker:string, numOfNfts:number, name:string, description:string, imageURI:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, attributeType4:string, attributeValue4:string, hasLockedContent:bool, lockedContent:string)
     {
         // check if contract is active
         Runtime.expect(this.checkContractPaused() != true, "GhostMarket smart contract is currently paused");
@@ -521,9 +534,6 @@ token GHOST {
 
             // check royalty parameter
             Runtime.expect(royalty >= 0.00 and royalty <= 50.00, "invalid number for royalties, it should be between 0.00 and 50.00");
-
-            // check infoURI parameter
-            Runtime.expect(infoURI.length() >= 0, "invalid char length for infoURI, it should be >= 0, received " + infoURI.length());
 
             // check extended parameters
             if (attributeType1.length() > 0)
@@ -595,7 +605,7 @@ token GHOST {
         }
 
         // start minting nft in nft series
-        this.mintSeries(editionId, numOfNfts, name, description, imageURI, creator, royalty, infoURI, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, attributeType4, attributeValue4, mintTicker, hasLockedContent, lockedContent);
+        this.mintSeries(editionId, creator, royalty, mintTicker, numOfNfts, name, description, imageURI, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, attributeType4, attributeValue4, hasLockedContent, lockedContent);
     }
 
     /// @dev onUpgrade trigger.
@@ -607,21 +617,6 @@ token GHOST {
 		Runtime.expect(Runtime.isWitness(from), "invalid witness");
         return;
     }
-
-    /// @dev onBurn trigger.
-    /// @param from - Address from - address
-    /// @param from - Address to - address
-    /// @param from - Symbol - string
-    /// @param from - Amount - number
-    trigger onBurn(from:address, to:address, symbol:string, amount:number)
-	{
-        if (_burnRewardsAmount != 0)
-        {
-            // transfer from contract address to address which burned
-            local decimalsFees:number := 10 ^ Token.getDecimals(_burnRewardsSymbol);
-            Token.transfer(_addressContract, from, _burnRewardsSymbol, _burnRewardsAmount * decimalsFees);
-        }
-	}
 
     /// @dev onMint trigger.
     /// @param from - Address from - address
