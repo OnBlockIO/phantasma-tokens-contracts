@@ -245,6 +245,53 @@ token GHOST {
 		Token.burn(creator, _feesSymbol, serviceFees);
     }
 
+    /// @dev Create a new NFT series.
+    /// @param editionId - ID of the NFT series - number
+    /// @param editionMax - Edition Max the NFT series - number
+    /// @param editionMode - Edition Mode the NFT series, 1 for duplicate, 2 for unique - number
+    /// @param creator - Original owner of the NFT - address
+    /// @param mintTicker - Ticker token on which to mint the NFT - string
+    private createSeries(editionId:number, editionMax:number, editionMode:number, creator:address, mintTicker:string)
+    {
+        // check if contract is active
+        Runtime.expect(this.checkContractPaused() != true, "GhostMarket smart contract is currently paused");
+
+        // check is witness
+        Runtime.expect(Runtime.isWitness(creator), "invalid witness");
+
+        // check allow gas dapp transaction fees
+        Runtime.expect(Runtime.gasTarget() == _addressContract, "invalid address for dapp transaction fees in AllowGas, it should be " + _addressContract);
+
+        // check editionId parameter
+        Runtime.expect(editionId > 0, "invalid number for editionId, it should be > 0, received " + editionId);
+
+        // check editionMax parameter
+        Runtime.expect(editionMax >= 0, "invalid number for editionMax, it should be >= 0, received " + editionMax);
+
+        // check editionMode parameter
+        Runtime.expect(editionMode > 0, "invalid number for editionMode, it should be > 0, received " + editionMode);
+
+        // check mintTicker parameter
+		Runtime.expect(Token.exists(mintTicker), "invalid token for mintTicker, received " + mintTicker);
+
+        // check mintTicker is not fungible
+        local flags:TokenFlags := Token.getFlags(mintTicker);
+        Runtime.expect(flags.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + mintTicker);
+
+        // TokenSeries mode
+        if (editionMode == 1)
+        {
+            // create series duplicated
+            // NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
+        }
+        else
+        {
+            // create series unique
+            // NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, ghostNft);
+        }
+
+    }
+
     /// @dev Mint a specific number of NFT in a series with unique content.
     /// @param editionId - ID of the NFT series - number
     /// @param numOfNfts - Quantity of NFT to mint - number
@@ -374,51 +421,40 @@ token GHOST {
         _feesAddress:= feesAddress;
     }
 
-	/// @dev Create a new NFT series.
-    /// @param editionId - ID of the NFT series - number
-    /// @param editionMax - Edition Max the NFT series - number
-    /// @param editionMode - Edition Mode the NFT series, 1 for duplicate, 2 for unique - number
-    /// @param creator - Original owner of the NFT - address
-    /// @param mintTicker - Ticker token on which to mint the NFT - string
-    public createSeries(editionId:number, editionMax:number, editionMode:number, creator:address, mintTicker:string)
+    /// @dev Update the burn rewards asset.
+    /// @param burnRewardsSymbol - asset used for burn rewards - string
+    public updateBurnRewardsSymbol(burnRewardsSymbol:string)
     {
-        // check if contract is active
-        Runtime.expect(this.checkContractPaused() != true, "GhostMarket smart contract is currently paused");
+        // check is witness and is current owner
+        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
 
-        // check is witness
-        Runtime.expect(Runtime.isWitness(creator), "invalid witness");
+        // check burnRewardsSymbol parameter
+		Runtime.expect(Token.exists(burnRewardsSymbol), "invalid token for burnRewardsSymbol, received " + burnRewardsSymbol);
 
-        // check allow gas dapp transaction fees
-        Runtime.expect(Runtime.gasTarget() == _addressContract, "invalid address for dapp transaction fees in AllowGas, it should be " + _addressContract);
+        // check burnRewardsSymbol is fungible
+        local flags:TokenFlags := Token.getFlags(burnRewardsSymbol);
+        Runtime.expect(flags.isSet(TokenFlags.Fungible) == true, "invalid fungible flag for " + burnRewardsSymbol);
 
-        // check editionId parameter
-        Runtime.expect(editionId > 0, "invalid number for editionId, it should be > 0, received " + editionId);
+        // set fees
+        _burnRewardsSymbol:= burnRewardsSymbol;
+    }
 
-        // check editionMax parameter
-        Runtime.expect(editionMax >= 0, "invalid number for editionMax, it should be >= 0, received " + editionMax);
+    /// @dev Update the burn rewards amount.
+    /// @param burnRewardsAmount - amount used for burn rewards - number
+    public updateBurnRewardsAmount(burnRewardsAmount:string)
+    {
+        // check is witness and is current owner
+        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
 
-        // check editionMode parameter
-        Runtime.expect(editionMode > 0, "invalid number for editionMode, it should be > 0, received " + editionMode);
+        // check burnRewardsAmount parameter
+		Runtime.expect(Token.exists(burnRewardsAmount), "invalid token for burnRewardsAmount, received " + burnRewardsAmount);
 
-        // check mintTicker parameter
-		Runtime.expect(Token.exists(mintTicker), "invalid token for mintTicker, received " + mintTicker);
+        // check burnRewardsAmount is fungible
+        local flags:TokenFlags := Token.getFlags(burnRewardsAmount);
+        Runtime.expect(flags.isSet(TokenFlags.Fungible) == true, "invalid fungible flag for " + burnRewardsAmount);
 
-        // check mintTicker is not fungible
-        local flags:TokenFlags := Token.getFlags(mintTicker);
-        Runtime.expect(flags.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + mintTicker);
-
-        // TokenSeries mode
-        if (editionMode == 1)
-        {
-            // create series duplicated
-            // NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
-        }
-        else
-        {
-            // create series unique
-            // NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, ghostNft);
-        }
-
+        // set fees
+        _burnRewardsAmount := burnRewardsAmount;
     }
 
     /// @dev Mint a specific number of NFT on GhostMarket contract.
@@ -534,9 +570,22 @@ token GHOST {
     /// @param from - Amount - number
     trigger onBurn(from:address, to:address, symbol:string, amount:number)
 	{
-        // transfer from contract address to address which burned
-        local decimalsFees:number := 10 ^ Token.getDecimals(_burnRewardsSymbol);
-		Token.transfer(_contractAddress, from, _burnRewardsSymbol, _burnRewardsAmount * decimalsFees);
+        if (_burnRewardsAmount != 0)
+        {
+            // transfer from contract address to address which burned
+            local decimalsFees:number := 10 ^ Token.getDecimals(_burnRewardsSymbol);
+            Token.transfer(_contractAddress, from, _burnRewardsSymbol, _burnRewardsAmount * decimalsFees);
+        }
 	}
+
+    /// @dev onMint trigger.
+    /// @param from - Address from - address
+    /// @param from - Address to - address
+    /// @param from - Symbol - string
+    /// @param from - Amount - number
+    trigger onMint(from:address, to:address, symbol:string, amount:number)
+    {
+
+    }
 
 }
