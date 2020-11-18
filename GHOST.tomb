@@ -218,9 +218,8 @@ token GHOST {
     {
 		local decimalsFees:number := 10 ^ Token.getDecimals(_feesSymbol);
 		local feesBaseResult:number := this.feesBase(numOfNfts);
-		local serviceFees:number := _feesMultiplier * feesBaseResult;
         local feesBalance:number := Token.getBalance(creator, _feesSymbol);
-        local feesRequired:number := serviceFees * decimalsFees;
+        local feesRequired:number := feesBaseResult * decimalsFees;
         local missingFees:number := feesBalance - feesRequired;
 		Runtime.expect(missingFees > 0, "not enough fees to pay for this mint transaction, requires " + missingFees + " more " + _feesSymbol);
     }
@@ -232,8 +231,7 @@ token GHOST {
     {
 		local decimalsFees:number := 10 ^ Token.getDecimals(_feesSymbol);
 		local feesBaseResult:number := this.feesBase(numOfNfts);
-		local serviceFees:number := _feesMultiplier * feesBaseResult;
-		Token.transfer(creator, _feesAddress, _feesSymbol, serviceFees * decimalsFees);
+		Token.transfer(creator, _feesAddress, _feesSymbol, feesBaseResult * decimalsFees);
 		Token.burn(creator, _feesSymbol, serviceFees);
     }
 
