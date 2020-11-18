@@ -72,10 +72,10 @@ token GHOST {
     global _feesThreshold3:number;
 	// global storage for fees address
 	global _feesAddress:address;
-    // global storage for burn rewards symbol
+    // global storage for burn rewards amount
     global _burnRewardsAmount:number;
-	// global storage for burn rewards amount
-	global _burnRewardsSymbol:address;
+	// global storage for burn rewards symbol
+	global _burnRewardsSymbol:string;
 
     // token name
     property name:string = "GhostMarket NFT";
@@ -242,7 +242,7 @@ token GHOST {
 		local decimalsFees:number := 10 ^ Token.getDecimals(_feesSymbol);
 		local feesBaseResult:number := this.feesBase(numOfNfts);
 		Token.transfer(creator, _feesAddress, _feesSymbol, feesBaseResult * decimalsFees);
-		Token.burn(creator, _feesSymbol, serviceFees);
+		Token.burn(creator, _feesSymbol, feesBaseResult * decimalsFees);
     }
 
     /// @dev Create a new NFT series.
@@ -441,17 +441,13 @@ token GHOST {
 
     /// @dev Update the burn rewards amount.
     /// @param burnRewardsAmount - amount used for burn rewards - number
-    public updateBurnRewardsAmount(burnRewardsAmount:string)
+    public updateBurnRewardsAmount(burnRewardsAmount:number)
     {
         // check is witness and is current owner
         Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
 
         // check burnRewardsAmount parameter
-		Runtime.expect(Token.exists(burnRewardsAmount), "invalid token for burnRewardsAmount, received " + burnRewardsAmount);
-
-        // check burnRewardsAmount is fungible
-        local flags:TokenFlags := Token.getFlags(burnRewardsAmount);
-        Runtime.expect(flags.isSet(TokenFlags.Fungible) == true, "invalid fungible flag for " + burnRewardsAmount);
+        Runtime.expect(burnRewardsAmount >= 0, "invalid number for burnRewardsAmount, it should be >= 0, received " + burnRewardsAmount);
 
         // set fees
         _burnRewardsAmount := burnRewardsAmount;
@@ -574,7 +570,7 @@ token GHOST {
         {
             // transfer from contract address to address which burned
             local decimalsFees:number := 10 ^ Token.getDecimals(_burnRewardsSymbol);
-            Token.transfer(_contractAddress, from, _burnRewardsSymbol, _burnRewardsAmount * decimalsFees);
+            Token.transfer(_addressContract, from, _burnRewardsSymbol, _burnRewardsAmount * decimalsFees);
         }
 	}
 
