@@ -49,7 +49,9 @@ token GHOST {
     // global storage for owner address
     global _addressOwner:address;
     // global storage for contract address
-    global _addressContract:address;
+    global _addressContract:address;    
+    // global storage for contract name
+    global _contractName:string;
     // global storage for contract pause
     global _contractPaused:bool;
     // global storage for locked content
@@ -70,7 +72,7 @@ token GHOST {
     global _infuseMultiplier:number;
 
     // token name
-    property name:string = "GhostMarket NFT";
+    property name:string = _contractName;
     // token version
     property version:string = "1.0";
     // token is transferable
@@ -180,6 +182,7 @@ token GHOST {
     {
         _addressOwner:= owner;
         _addressContract:= $THIS_ADDRESS;
+        _contractName:= "GhostMarket NFT";
 		_contractPaused:= false;
 		_feesMultiplier:= 1;
 		_feesSymbol:= "KCAL";
@@ -619,10 +622,11 @@ token GHOST {
     /// @dev get locked content of a specific nft series.
     /// @param from - Address querying for content - address
     /// @param nftID - Locked content of a specific NFT - number
-    public getLockedContent(from:address, nftID:number):string
+    public getLockedContent(from:address, nftSymbol: string, nftID:number):string
     {
         // check is witness and is current owner
-        // Runtime.expect(from == OWNEROF(nftID), "invalid owner address, received " + from + " while it should be " + OWNEROF(nftID)); // how to get current owner??
+        local nftInfo:NFT := NFT.read(nftSymbol, nftID);
+        Runtime.expect(from == nftInfo.Owner, "invalid owner address, received " + from + " while it should be "); // how to get current owner??
 		Runtime.expect(Runtime.isWitness(from), "invalid witness");
 
         // return content if owner
@@ -649,7 +653,11 @@ token GHOST {
     /// @param from - Amount - number
     trigger onMint(from:address, to:address, symbol:string, amount:number)
     {
-
+        Runtime.expect(Runtime.context() == _contractName, "on mint not executed from within contract");
+    }
+    
+    trigger onSeries(from: address) {
+        Runtime.expect(Runtime.context() == _contractName, "onCreateSeries not executed from within contract");
     }
 
 }
