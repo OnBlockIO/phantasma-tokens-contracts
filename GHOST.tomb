@@ -72,6 +72,10 @@ token GHOST {
     global _feesThreshold3:number;
 	// global storage for fees address
 	global _feesAddress:address;
+    // global storage for burn rewards symbol
+    global _burnRewardsAmount:number;
+	// global storage for burn rewards amount
+	global _burnRewardsSymbol:address;
 
     // token name
     property name:string = "GhostMarket NFT";
@@ -101,6 +105,10 @@ token GHOST {
     property feesThreshold3:number = _feesThreshold3;
 	// token fees address
     property feesAddress:address = _feesAddress;
+    // burn rewards symbol
+    property burnRewardsAmount:number = _burnRewardsAmount;
+	// burn rewards amount
+    property burnRewardsSymbol:address = _burnRewardsSymbol;
 
     /// @dev ghostNft struct.
     nft ghostNft<ghostRom, ghostRam> {
@@ -165,6 +173,8 @@ token GHOST {
 		_feesThreshold2:= 40;
 		_feesThreshold3:= 70;
 		_feesAddress:= @P2KLzxq8cUi47URLZZYcLs54WPVYnknrHWVryUUUqhuhq5K; // ghostmarket
+        _burnRewardsSymbol:= "KCAL";
+        _burnRewardsAmount:= 1;
     }
 
     /// @dev Internal method to check if the contract is paused.
@@ -516,5 +526,17 @@ token GHOST {
 		Runtime.expect(Runtime.isWitness(from), "invalid witness");
         return;
     }
+
+    /// @dev onBurn trigger.
+    /// @param from - Address from - address
+    /// @param from - Address to - address
+    /// @param from - Symbol - string
+    /// @param from - Amount - number
+    trigger onBurn(from:address, to:address, symbol:string, amount:number)
+	{
+        // transfer from contract address to address which burned
+        local decimalsFees:number := 10 ^ Token.getDecimals(_burnRewardsSymbol);
+		Token.transfer(_contractAddress, from, _burnRewardsSymbol, _burnRewardsAmount * decimalsFees);
+	}
 
 }
