@@ -13,14 +13,30 @@ struct ghostRom
     description:string;
     // Image of the NFT - IPFS hash - string
     imageURI:string;
+    // Image of the NFT - IPFS hash - string
+    tokenURI:string;
     // Original owner of the NFT - address
     creator:address;
     // Commission (in %) for the royalties - decimal<2>
     royalty:decimal<2>;
     // Info URI of the NFT for extended properties - string
     infoURI:string;
-    // Extended properties - custom struct
-    extended:struct;
+    // Extended attribute1 type - string
+    attributeType1:string;
+    // Extended attribute1 value - string
+    attributeValue1:string;
+    // Extended attribute2 type - string
+    attributeType2:string;
+    // Extended attribute2 value - string
+    attributeValue2:string;
+    // Extended attribute3 type - string
+    attributeType3:string;
+    // Extended attribute3 value - string
+    attributeValue3:string;
+    // Extended attribute4 type - string
+    attributeType4:string;
+    // Extended attribute4 value - string
+    attributeValue4:string;
     // Locked content properties - string
     lockedContent:string;
 }
@@ -29,27 +45,6 @@ struct ghostRom
 struct ghostRam
 {
 
-}
-
-// extended struct
-struct extended
-{
-    // attribute1 type - string
-    attributeType1:string;
-    // attribute1 value - string
-    attributeValue1:string;
-    // attribute2 type - string
-    attributeType2:string;
-    // attribute2 value - string
-    attributeValue2:string;
-    // attribute3 type - string
-    attributeType3:string;
-    // attribute3 value - string
-    attributeValue3:string;
-    // attribute4 type - string
-    attributeType4:string;
-    // attribute4 value - string
-    attributeValue4:string;
 }
 
 // ghost contract
@@ -131,6 +126,10 @@ token GHOST {
             return _ROM.imageURI;
         }
 
+        property tokenURI:string {
+            return _ROM.tokenURI;
+        }
+
         property creator:address {
             return _ROM.creator;
         }
@@ -141,10 +140,6 @@ token GHOST {
 
         property infoURI:string {
             return _ROM.infoURI;
-        }
-
-        property extended:struct {
-            return _ROM.extended;
         }
 
         property lockedContent:string {
@@ -301,17 +296,27 @@ token GHOST {
     /// @param creator - Original owner of the NFT - address
     /// @param royalty - Commission (in %) for the royalties - decimal<2>
     /// @param infoURI - Token URI of the NFT - string
-    /// @param extended - Extended properties of the NFT - custom struct
+    /// @param attributeType1 - Extended properties of the NFT - string
+    /// @param attributeValue1 - Extended properties of the NFT - string
+    /// @param attributeType2 - Extended properties of the NFT - string
+    /// @param attributeValue2 - Extended properties of the NFT - string
+    /// @param attributeType3 - Extended properties of the NFT - string
+    /// @param attributeValue3 - Extended properties of the NFT - string
+    /// @param attributeType4 - Extended properties of the NFT - string
+    /// @param attributeValue4 - Extended properties of the NFT - string
     /// @param mintTicker - Ticker token on which to mint the NFT - string
     /// @param hasLockedContent - NFT has locked content - bool
     /// @param lockedContent - NFT locked content hash - string
-    private mintSeries(editionId:number, numOfNfts:number, name:string, description:string, imageURI:string, creator:address, royalty:decimal<2>, infoURI:string, extended:struct, mintTicker:string, hasLockedContent:bool, lockedContent:string)
+    private mintSeries(editionId:number, numOfNfts:number, name:string, description:string, imageURI:string, creator:address, royalty:decimal<2>, infoURI:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, attributeType4:string, attributeValue4:string, mintTicker:string, hasLockedContent:bool, lockedContent:string)
     {
         // local var for loop mint
         local index:number := 0;
 
+        // local var for tokenURI
+        local tokenURI:string := "";
+
         // local var for rom
-        local rom:ghostRom := Struct.ghostRom(Time.now(), name, description, imageURI, creator, royalty, infoURI, extended, lockedContent);
+        local rom:ghostRom := Struct.ghostRom(Time.now(), name, description, imageURI, tokenURI, creator, royalty, infoURI, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, attributeType4, attributeValue4, lockedContent);
 
         // mint numOfNfts NFT
         while (index < numOfNfts) {
@@ -465,10 +470,17 @@ token GHOST {
     /// @param imageURI - Image of the NFT - IPFS hash - string
     /// @param royalty - Commission (in %) for the royalties - decimal<2>
     /// @param infoURI - Token URI of the NFT - string
-    /// @param extended - Extended properties of the NFT - custom struct
+    /// @param attributeType1 - Extended properties of the NFT - string
+    /// @param attributeValue1 - Extended properties of the NFT - string
+    /// @param attributeType2 - Extended properties of the NFT - string
+    /// @param attributeValue2 - Extended properties of the NFT - string
+    /// @param attributeType3 - Extended properties of the NFT - string
+    /// @param attributeValue3 - Extended properties of the NFT - string
+    /// @param attributeType4 - Extended properties of the NFT - string
+    /// @param attributeValue4 - Extended properties of the NFT - string
     /// @param hasLockedContent - NFT has locked content - bool
     /// @param lockedContent - NFT locked content hash - string
-    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, mintTicker:string, numOfNfts:number, name:string, description:string, imageURI:string, royalty:decimal<2>, infoURI:string, extended:struct, hasLockedContent:bool, lockedContent:string)
+    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, mintTicker:string, numOfNfts:number, name:string, description:string, imageURI:string, royalty:decimal<2>, infoURI:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, attributeType4:string, attributeValue4:string, hasLockedContent:bool, lockedContent:string)
     {
         // check if contract is active
         Runtime.expect(this.checkContractPaused() != true, "GhostMarket smart contract is currently paused");
@@ -485,12 +497,6 @@ token GHOST {
         // check editionMode parameter
         Runtime.expect(editionMode > 0, "invalid number for editionMode, it should be > 0, received " + editionMode);
 
-        // check number of nft if unique mode series
-        if (editionMode == 2)
-        {
-            Runtime.expect(numOfNfts == 1, "invalid number for numOfNfts on unique mode series, it should be 1 max, received " + numOfNfts);
-        }
-
         // check mintTicker parameter
         Runtime.expect(Token.exists(mintTicker), "invalid token for mintTicker, received " + mintTicker);
         local flags:TokenFlags := Token.getFlags(mintTicker);
@@ -502,6 +508,71 @@ token GHOST {
             // check editionMax parameter
             Runtime.expect(editionMax >= 0, "invalid number for editionMax, it should be >= 0, received " + editionMax);
 
+            // check name parameter
+            Runtime.expect(name.length() >= 3, "invalid char length for name, it should be >= 3, received " + name.length());
+            Runtime.expect(name.length() <= 30, "invalid char length for name, it should be <= 30, received " + name.length());
+
+            // check description parameter
+            Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
+            Runtime.expect(description.length() <= 100, "invalid char length for description, it should be <= 100, received " + description.length());
+
+            // check imageURI parameter
+            Runtime.expect(imageURI.length() >= 0, "invalid char length for imageURI, it should be >= 0, received " + imageURI.length());
+
+            // check royalty parameter
+            Runtime.expect(royalty >= 0.00 and royalty <= 50.00, "invalid number for royalties, it should be between 0.00 and 50.00");
+
+            // check infoURI parameter
+            Runtime.expect(infoURI.length() >= 0, "invalid char length for infoURI, it should be >= 0, received " + infoURI.length());
+
+            // check extended parameters
+            if (attributeType1.length() > 0)
+            {
+                Runtime.expect(attributeType1.length() < 15, "invalid extended attributeType1 length");
+            }
+            if (attributeValue1.length() > 0)
+            {
+                Runtime.expect(attributeType1.length() > 0, "invalid extended attributeType1 length");
+                Runtime.expect(attributeValue1.length() < 15, "invalid extended attributeValue1 length");
+            }
+            if (attributeType2.length() > 0)
+            {
+                Runtime.expect(attributeType2.length() < 15, "invalid extended attributeType2 length");
+            }
+            if (attributeValue2.length() > 0)
+            {
+                Runtime.expect(attributeType2.length() > 0, "invalid extended attributeType2 length");
+                Runtime.expect(attributeValue2.length() < 15, "invalid extended attributeValue2 length");
+            }
+            if (attributeType3.length() > 0)
+            {
+                Runtime.expect(attributeType3.length() < 15, "invalid extended attributeType3 length");
+            }
+            if (attributeValue3.length() > 0)
+            {
+                Runtime.expect(attributeType3.length() > 0, "invalid extended attributeType3 length");
+                Runtime.expect(attributeValue3.length() < 15, "invalid extended attributeValue3 length");
+            }
+            if (attributeType4.length() > 0)
+            {
+                Runtime.expect(attributeType4.length() < 15, "invalid extended attributeType4 length");
+            }
+            if (attributeValue4.length() > 0)
+            {
+                Runtime.expect(attributeType4.length() > 0, "invalid extended attributeType4 length");
+                Runtime.expect(attributeValue4.length() < 15, "invalid extended attributeValue4 length");
+            }
+
+            // check hashLockedContent parameter
+            if (hasLockedContent)
+            {
+                Runtime.expect(lockedContent.length() >= 0, "invalid char length for lockedContent, it should be >= 0, received " + lockedContent.length());
+            }
+            else
+            {
+                Runtime.expect(lockedContent.length() == 0, "invalid char length for lockedContent, it should be == 0, received " + lockedContent.length());
+            }
+
             // new series - create series ID
             editionId := UID.generate();
 
@@ -512,6 +583,10 @@ token GHOST {
         // check numOfNfts parameter
         Runtime.expect(numOfNfts > 0, "invalid number for numOfNfts, it should be > 0, received " + numOfNfts);
         Runtime.expect(numOfNfts <= editionMax, "invalid number for numOfNfts, it should be < editionMax, received " + numOfNfts);
+        if (editionMode == 2)
+        {
+            Runtime.expect(numOfNfts == 1, "invalid number for numOfNfts on unique mode series, it should be 1 max, received " + numOfNfts);
+        }
 
         // if fees multiplier > 0, check if enough for transfer fees and burn fees
         if (_feesMultiplier > 0)
@@ -519,34 +594,8 @@ token GHOST {
             this.checkFees(numOfNfts, creator);
         }
 
-        // check name parameter
-        Runtime.expect(name.length() >= 3, "invalid char length for name, it should be >= 3, received " + name.length());
-        Runtime.expect(name.length() <= 30, "invalid char length for name, it should be <= 30, received " + name.length());
-
-        // check description parameter
-        Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
-        Runtime.expect(description.length() <= 100, "invalid char length for description, it should be <= 100, received " + description.length());
-
-        // check imageURI parameter
-        Runtime.expect(imageURI.length() >= 0, "invalid char length for imageURI, it should be >= 0, received " + imageURI.length());
-
-        // check royalty parameter
-        Runtime.expect(royalty >= 0.00 and royalty <= 50.00, "invalid number for royalties, it should be between 0.00 and 50.00");
-
-        // check infoURI parameter
-        Runtime.expect(infoURI.length() >= 0, "invalid char length for infoURI, it should be >= 0, received " + infoURI.length());
-
-        // check extended parameter // how to check that?
-        // Runtime.expect(extended.attributeType1.length() >= 0, "invalid extended attribute1 length");
-
-        if (hasLockedContent)
-        {
-            // check hashLockedContent parameter
-            Runtime.expect(lockedContent.length() >= 0, "invalid char length for lockedContent, it should be >= 0, received " + lockedContent.length());
-        }
-
         // start minting nft in nft series
-        this.mintSeries(editionId, numOfNfts, name, description, imageURI, creator, royalty, infoURI, extended, mintTicker, hasLockedContent, lockedContent);
+        this.mintSeries(editionId, numOfNfts, name, description, imageURI, creator, royalty, infoURI, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, attributeType4, attributeValue4, mintTicker, hasLockedContent, lockedContent);
     }
 
     /// @dev onUpgrade trigger.
