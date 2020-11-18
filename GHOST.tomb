@@ -21,6 +21,8 @@ struct ghostRom
     infoURI:string;
     // Extended properties - custom struct
     extended:struct;
+    // Locked content properties - string
+    lockedContent:struct;
 }
 
 // ghostRam struct
@@ -105,7 +107,7 @@ token GHOST {
 
         import Token;
 
-        property created:timestamp { // needed?
+        property created:timestamp {
             return _ROM.created;
         }
 
@@ -135,6 +137,10 @@ token GHOST {
 
         property extended:struct {
             return _ROM.extended;
+        }
+
+        property lockedContent:string {
+            return _ROM.lockedContent;
         }
 
     }
@@ -231,15 +237,26 @@ token GHOST {
 		Token.burn(creator, _feesSymbol, serviceFees);
     }
 
-    /// @dev Mint a specific number of NFT in a specific series on GhostMarket contract.
+    /// @dev Mint a specific number of NFT in a series with unique content.
     /// @param editionId - ID of the NFT series - number
     /// @param numOfNfts - Quantity of NFT to mint - number
-    /// @param creator - Address trying to mint - address
+    /// @param name - Name of the NFT to mint - string
+    /// @param description - Description of the NFT to mint - string
+    /// @param imageURI - Image of the NFT - IPFS hash - string
+    /// @param creator - Original owner of the NFT - address
+    /// @param royalty - Commission (in %) for the royalties - decimal<2>
+    /// @param infoURI - Token URI of the NFT - string
+    /// @param extended - Extended properties of the NFT - custom struct
     /// @param mintTicker - Ticker token on which to mint the NFT - string
-    private mintSeries(editionId:number, numOfNfts:number, creator:address, mintTicker:string)
+    /// @param hasLockedContent - NFT has locked content - bool
+    /// @param lockedContent - NFT locked content hash - string
+    private mintSeries(editionId:number, numOfNfts:number, name:string, description:string, imageURI:string, creator:address, royalty:decimal<2>, infoURI:string, extended:struct, mintTicker:string, hasLockedContent:bool, lockedContent:string)
     {
         // local var for loop mint
         local index:number := 0;
+
+        // local var for rom
+        local rom:ghostRom := Struct.ghostRom(Time.now(), name, description, imageURI, creator, royalty, infoURI, extended, lockedContent);
 
         // mint numOfNfts NFT
         while (index < numOfNfts) {
@@ -250,7 +267,7 @@ token GHOST {
         // if feesMultipler > 0, pay service fees and pay burn fees
         if (_feesMultiplier > 0)
         {
-			this.payFees(numOfNfts, creator);
+            this.payFees(numOfNfts, creator);
         }
     }
 
@@ -350,18 +367,12 @@ token GHOST {
     }
 
 	/// @dev Create a new NFT series.
+    /// @param editionId - ID of the NFT series - number
     /// @param editionMax - Edition Max the NFT series - number
-    /// @param name - Name of the NFT to mint - string
-    /// @param description - Description of the NFT to mint - string
-    /// @param imageURI - Image of the NFT - IPFS hash - string
+    /// @param editionMode - Edition Mode the NFT series, 1 for duplicate, 2 for unique - number
     /// @param creator - Original owner of the NFT - address
-    /// @param royalty - Commission (in %) for the royalties - decimal<2>
-    /// @param infoURI - Token URI of the NFT - string
-    /// @param extended - Extended properties of the NFT - custom struct
     /// @param mintTicker - Ticker token on which to mint the NFT - string
-    /// @param hasLockedContent - NFT has locked content - bool
-    /// @param lockedContent - NFT locked content hash - string
-    public createSeries(editionId:number, editionMax:number, name:string, description:string, imageURI:string, creator:address, royalty:decimal<2>, infoURI:string, extended:struct, mintTicker:string, hasLockedContent:bool, lockedContent:string):number
+    public createSeries(editionId:number, editionMax:number, editionMode:number, creator:address, mintTicker:string)
     {
         // check if contract is active
         Runtime.expect(this.checkContractPaused() != true, "GhostMarket smart contract is currently paused");
@@ -373,30 +384,13 @@ token GHOST {
         Runtime.expect(Runtime.gasTarget() == _addressContract, "invalid address for dapp transaction fees in AllowGas, it should be " + _addressContract);
 
         // check editionId parameter
-        Runtime.expect(editionId >= 0, "invalid number for editionId, it should be >= 0, received " + editionId);
+        Runtime.expect(editionId > 0, "invalid number for editionId, it should be > 0, received " + editionId);
 
         // check editionMax parameter
         Runtime.expect(editionMax >= 0, "invalid number for editionMax, it should be >= 0, received " + editionMax);
 
-        // check name parameter
-		Runtime.expect(name.length() >= 3, "invalid char length for name, it should be >= 3, received " + name.length());
-		Runtime.expect(name.length() <= 30, "invalid char length for name, it should be <= 30, received " + name.length());
-
-        // check description parameter
-		Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
-		Runtime.expect(description.length() <= 100, "invalid char length for description, it should be <= 100, received " + description.length());
-
-        // check imageURI parameter
-        Runtime.expect(imageURI.length() >= 0, "invalid char length for imageURI, it should be >= 0, received " + imageURI.length());
-
-        // check royalty parameter
-        Runtime.expect(royalty >= 0.00 and royalty <= 100.00, "invalid number for royalties, it should be between 0.00 and 100.00");
-
-        // check infoURI parameter
-        Runtime.expect(infoURI.length() >= 0, "invalid char length for infoURI, it should be >= 0, received " + infoURI.length());
-
-        // check extended parameter // how to check that?
-        // Runtime.expect(extended.attributeType1.length() >= 0, "invalid extended attribute1 length");
+        // check editionMode parameter
+        Runtime.expect(editionMode > 0, "invalid number for editionMode, it should be > 0, received " + editionMode);
 
         // check mintTicker parameter
 		Runtime.expect(Token.exists(mintTicker), "invalid token for mintTicker, received " + mintTicker);
@@ -405,32 +399,36 @@ token GHOST {
         local flags:TokenFlags := Token.getFlags(mintTicker);
         Runtime.expect(flags.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + mintTicker);
 
-        if (hasLockedContent)
+        // TokenSeries mode
+        if (editionMode == 1)
         {
-            // check hashLockedContent parameter
-            Runtime.expect(lockedContent.length() >= 0, "invalid char length for lockedContent, it should be >= 0, received " + lockedContent.length());
+            // create series duplicated
+            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
         }
-
-        // create series
-        NFT.createSeries(_addressOwner, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
+        else
+        {
+            // create series unique
+            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, ghostNft);
+        }
 
     }
 
     /// @dev Mint a specific number of NFT on GhostMarket contract.
     /// @param editionId - ID of the NFT series - number
     /// @param editionMax - Edition Max the NFT series - number
+    /// @param editionMode - Edition Mode the NFT series, 1 for duplicate, 2 for unique - number
+    /// @param creator - Original owner of the NFT - address
+    /// @param mintTicker - Ticker token on which to mint the NFT - string
     /// @param numOfNfts - Quantity of NFT to mint - number
     /// @param name - Name of the NFT to mint - string
     /// @param description - Description of the NFT to mint - string
     /// @param imageURI - Image of the NFT - IPFS hash - string
-    /// @param creator - Original owner of the NFT - address
     /// @param royalty - Commission (in %) for the royalties - decimal<2>
     /// @param infoURI - Token URI of the NFT - string
     /// @param extended - Extended properties of the NFT - custom struct
-    /// @param mintTicker - Ticker token on which to mint the NFT - string
     /// @param hasLockedContent - NFT has locked content - bool
     /// @param lockedContent - NFT locked content hash - string
-    public mintToken(editionId:number, editionMax:number, numOfNfts:number, name:string, description:string, imageURI:string, creator:address, royalty:decimal<2>, infoURI:string, extended:struct, mintTicker:string, hasLockedContent:bool, lockedContent:string)
+    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, mintTicker:string, numOfNfts:number, name:string, description:string, imageURI:string, royalty:decimal<2>, infoURI:string, extended:struct, hasLockedContent:bool, lockedContent:string)
     {
         // check if contract is active
         Runtime.expect(this.checkContractPaused() != true, "GhostMarket smart contract is currently paused");
@@ -444,31 +442,56 @@ token GHOST {
         // check editionId parameter
         Runtime.expect(editionId >= 0, "invalid number for editionId, it should be >= 0, received " + editionId);
 
-        // check editionMax parameter
-        Runtime.expect(editionMax >= 0, "invalid number for editionMax, it should be >= 0, received " + editionMax);
+        // check editionMode parameter
+        Runtime.expect(editionMode > 0, "invalid number for editionMode, it should be > 0, received " + editionMode);
+
+        // check number of nft if unique mode series
+        if (editionMode == 2)
+        {
+            Runtime.expect(numOfNfts == 1, "invalid number for numOfNfts on unique mode series, it should be 1 max, received " + numOfNfts);
+        }
+
+        // check mintTicker parameter
+        Runtime.expect(Token.exists(mintTicker), "invalid token for mintTicker, received " + mintTicker);
+        local flags:TokenFlags := Token.getFlags(mintTicker);
+        Runtime.expect(flags.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + mintTicker);
+
+        // check if new series and create it
+        if (editionId == 0)
+        {
+            // check editionMax parameter
+            Runtime.expect(editionMax >= 0, "invalid number for editionMax, it should be >= 0, received " + editionMax);
+
+            // new series - create series ID
+            editionId := UID.generate();
+
+            // new series - create series
+            this.createSeries(editionId, editionMax, editionMode, creator, mintTicker);
+        }
 
         // check numOfNfts parameter
         Runtime.expect(numOfNfts > 0, "invalid number for numOfNfts, it should be > 0, received " + numOfNfts);
+        Runtime.expect(numOfNfts <= editionMax, "invalid number for numOfNfts, it should be < editionMax, received " + numOfNfts);
 
         // if fees multiplier > 0, check if enough for transfer fees and burn fees
         if (_feesMultiplier > 0)
         {
-			this.checkFees(numOfNfts, creator);
+            this.checkFees(numOfNfts, creator);
         }
 
         // check name parameter
-		Runtime.expect(name.length() >= 3, "invalid char length for name, it should be >= 3, received " + name.length());
-		Runtime.expect(name.length() <= 30, "invalid char length for name, it should be <= 30, received " + name.length());
+        Runtime.expect(name.length() >= 3, "invalid char length for name, it should be >= 3, received " + name.length());
+        Runtime.expect(name.length() <= 30, "invalid char length for name, it should be <= 30, received " + name.length());
 
         // check description parameter
-		Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
-		Runtime.expect(description.length() <= 100, "invalid char length for description, it should be <= 100, received " + description.length());
+        Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
+        Runtime.expect(description.length() <= 100, "invalid char length for description, it should be <= 100, received " + description.length());
 
         // check imageURI parameter
         Runtime.expect(imageURI.length() >= 0, "invalid char length for imageURI, it should be >= 0, received " + imageURI.length());
 
         // check royalty parameter
-        Runtime.expect(royalty >= 0.00 and royalty <= 100.00, "invalid number for royalties, it should be between 0.00 and 100.00");
+        Runtime.expect(royalty >= 0.00 and royalty <= 50.00, "invalid number for royalties, it should be between 0.00 and 50.00");
 
         // check infoURI parameter
         Runtime.expect(infoURI.length() >= 0, "invalid char length for infoURI, it should be >= 0, received " + infoURI.length());
@@ -476,32 +499,14 @@ token GHOST {
         // check extended parameter // how to check that?
         // Runtime.expect(extended.attributeType1.length() >= 0, "invalid extended attribute1 length");
 
-        // check mintTicker parameter
-		Runtime.expect(Token.exists(mintTicker), "invalid token for mintTicker, received " + mintTicker);
-
-        // check mintTicker is not fungible
-        local flags:TokenFlags := Token.getFlags(mintTicker);
-        Runtime.expect(flags.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + mintTicker);
-
         if (hasLockedContent)
         {
             // check hashLockedContent parameter
             Runtime.expect(lockedContent.length() >= 0, "invalid char length for lockedContent, it should be >= 0, received " + lockedContent.length());
         }
 
-        // check if it's a new series
-        if (editionId == 0)
-        {
-            // new series - create series ID
-            editionId := UID.generate();
-
-            // new series - create series
-            this.createSeries(editionId, editionMax, name, description, imageURI, creator, royalty, infoURI, extended, mintTicker, hasLockedContent, lockedContent);
-        }
-
-        // start minting nft
-        this.mintSeries(editionId, numOfNfts, creator, mintTicker);
-
+        // start minting nft in nft series
+        this.mintSeries(editionId, editionMode, numOfNfts, name, description, imageURI, creator, royalty, infoURI, extended, mintTicker, hasLockedContent, lockedContent);
     }
 
     /// @dev onUpgrade trigger.
