@@ -234,11 +234,15 @@ token GHOST {
 	/// @param creator - Address trying to mint - address
     private checkFees(numOfNfts:number, creator:address)
     {
-        local feesBalance:number := Token.getBalance(creator, _feesSymbol);
+        // current balance
+        local balance:number := Token.getBalance(creator, _feesSymbol);
+        // calculate asset decimals
         local assetDecimals:number := 10 ^ Token.getDecimals(_feesSymbol);
+        // calculate required fees
         local feesRequired:number := this.feesBase(numOfNfts) * assetDecimals;
-        local missingFees:number := feesBalance - feesRequired;
-		Runtime.expect(missingFees > 0, "not enough fees to pay for this mint transaction, requires " + missingFees + " more " + _feesSymbol);
+        // calculate missing fees
+        local feesMissing:number := (feesRequired - balance) / assetDecimals;
+		Runtime.expect(feesMissing < 0, "not enough fees to pay for this mint transaction, requires " + feesMissing + " more " + _feesSymbol);
     }
 
 	/// @dev Internal method to pay fees based on mint quantity
@@ -250,10 +254,8 @@ token GHOST {
 		local feesBaseResult:number := this.feesBase(numOfNfts);
         // calculate asset decimals
 		local assetDecimals:number := 10 ^ Token.getDecimals(_feesSymbol);
-        // calculate infuse
-        local infuseAmount:number := _infuseMultiplier * assetDecimals;
         // calculate fees minus infuse
-        local feesTransfer:number := (feesBaseResult * assetDecimals) - infuseAmount;
+        local feesTransfer:number := (feesBaseResult - _infuseMultiplier) * assetDecimals;
         // calculate fees burn
         local feesBurn:number := feesBaseResult * assetDecimals;
         // fees payment
@@ -305,10 +307,10 @@ token GHOST {
         //}
 
         // if fees multiplier > 0, check if enough for transfer fees and burn fees
-        // if (_feesMultiplier > 0)
-        //{
-            // this.checkFees(numOfNfts, creator);
-        //}
+        if (_feesMultiplier > 0)
+        {
+            this.checkFees(numOfNfts, creator);
+        }
 
         // check mintTicker parameter
         Runtime.expect(Token.exists(mintTicker), "invalid token for mintTicker, received " + mintTicker);
@@ -319,7 +321,8 @@ token GHOST {
     private validateMintSeries(royalties:decimal<2>, name:string, description:string, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent:string, listPrice:number, listPriceCurrency:string, listLastEndDate:timestamp, infusedAsset:string, infusedAmount:number)
     {
         // check royalties parameter
-        Runtime.expect(royalties >= 0.00 and royalties <= 50.00, "invalid number for royalties, it should be between 0.00 and 50.00");
+        Runtime.expect(royalties >= 0.00, "invalid number for royalties, it should be between 0.00 and 50.00");
+        Runtime.expect(royalties <= 50.00, "invalid number for royalties, it should be between 0.00 and 50.00");
 
         // check name parameter
         Runtime.expect(name.length() >= 3, "invalid char length for name, it should be >= 3, received " + name.length());
@@ -338,34 +341,25 @@ token GHOST {
         // check extended parameters
         if (attributeType1.length() > 0)
         {
-            Runtime.expect(attributeType1.length() < 15, "invalid extended attributeType1 length");
-        }
-        if (attributeValue1.length() > 0)
-        {
-            Runtime.expect(attributeType1.length() > 0, "invalid extended attributeType1 length");
-            Runtime.expect(attributeValue1.length() < 15, "invalid extended attributeValue1 length");
+            Runtime.expect(attributeType1.length() < 15, "invalid extended attributeType1 length, received " + attributeType1.length());
+            Runtime.expect(attributeValue1.length() > 0, "invalid extended attributeValue1 length, received " + attributeValue1.length());
+            Runtime.expect(attributeValue1.length() < 15, "invalid extended attributeValue1 length, received " + attributeValue1.length());
         }
         if (attributeType2.length() > 0)
         {
-            Runtime.expect(attributeType2.length() < 15, "invalid extended attributeType2 length");
-        }
-        if (attributeValue2.length() > 0)
-        {
-            Runtime.expect(attributeType2.length() > 0, "invalid extended attributeType2 length");
-            Runtime.expect(attributeValue2.length() < 15, "invalid extended attributeValue2 length");
+            Runtime.expect(attributeType2.length() < 15, "invalid extended attributeType2 length, received " + attributeType2.length());
+            Runtime.expect(attributeValue2.length() > 0, "invalid extended attributeType2 length, received " + attributeValue2.length());
+            Runtime.expect(attributeValue2.length() < 15, "invalid extended attributeValue2 length, received " + attributeValue2.length());
         }
         if (attributeType3.length() > 0)
         {
-            Runtime.expect(attributeType3.length() < 15, "invalid extended attributeType3 length");
-        }
-        if (attributeValue3.length() > 0)
-        {
-            Runtime.expect(attributeType3.length() > 0, "invalid extended attributeType3 length");
-            Runtime.expect(attributeValue3.length() < 15, "invalid extended attributeValue3 length");
+            Runtime.expect(attributeType3.length() < 15, "invalid extended attributeType3 length, received " + infoURL.length());
+            Runtime.expect(attributeValue3.length() > 0, "invalid extended attributeValue3 length, received " + attributeValue3.length());
+            Runtime.expect(attributeValue3.length() < 15, "invalid extended attributeValue3 length, received " + attributeValue3.length());
         }
 
         // check hashLockedContent parameter
-        Runtime.expect(lockedContent.length() > 0, "invalid char length for lockedContent, it should be > 0, received " + lockedContent.length());
+        Runtime.expect(lockedContent.length() >= 0, "invalid char length for lockedContent, it should be >= 0, received " + lockedContent.length());
 
         // check listPrice parameter
         Runtime.expect(listPrice >= 0, "invalid number for listPrice, it should be >= 0, received " + listPrice);
@@ -561,10 +555,10 @@ token GHOST {
         //if (editionId == 0)
         //{
             // new series - create series ID
-            //editionId := UID.generate();
+            editionId := UID.generate();
 
             // new series - create series
-            //this.createSeries(editionId, editionMax, editionMode, creator, mintTicker);
+            // this.createSeries(editionId, editionMax, editionMode, creator, mintTicker);
         //}
 
         // validate mint token
