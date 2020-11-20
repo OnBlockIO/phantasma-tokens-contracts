@@ -376,19 +376,18 @@ token GHOST {
         // check hashLockedContent parameter
         Runtime.expect(lockedContent.length() >= 0, "invalid char length for lockedContent, it should be >= 0, received " + lockedContent.length());
 
-        // check listPrice parameter
-        Runtime.expect(listPrice >= 0, "invalid number for listPrice, it should be >= 0, received " + listPrice);
+        // check listPrice & listPriceCurrency parameter
+        if (listPrice > 0)
+        {
+            Runtime.expect(Token.exists(listPriceCurrency), "invalid token for listPriceCurrency, received " + listPriceCurrency);
+            Runtime.expect(this.isNFT(listPriceCurrency) == false, "invalid fungible flag for " + listPriceCurrency);
+        }
 
-        // check listPriceCurrency parameter
-        Runtime.expect(Token.exists(listPriceCurrency), "invalid token for listPriceCurrency, received " + listPriceCurrency);
-        Runtime.expect(this.isNFT(listPriceCurrency), "invalid fungible flag for " + listPriceCurrency);
-
-        // check infusedAsset parameter
-        Runtime.expect(Token.exists(infusedAsset), "invalid token for infusedAsset, received " + infusedAsset);
-        Runtime.expect(this.isNFT(infusedAsset), "invalid fungible flag for " + infusedAsset);
-
-        // check infusedAmount parameter
-        Runtime.expect(infusedAmount >= 0, "invalid number for infusedAmount, it should be >= 0, received " + infusedAmount);
+        // check infusedAmount & infusedAsset parameter
+        if (infusedAmount > 0)
+        {
+            Runtime.expect(Token.exists(infusedAsset), "invalid token for infusedAsset, received " + infusedAsset);
+        }
     }
 
     private infuseToken(creator:address, mintTicker:string, tokenID:number, infusedAsset:string, infusedAmount:number)
@@ -462,7 +461,6 @@ token GHOST {
 
         // check feesSymbol parameter
         Runtime.expect(Token.exists(feesSymbol), "invalid token for feesSymbol, received " + feesSymbol);
-        Runtime.expect(this.isNFT(feesSymbol), "invalid fungible flag for " + feesSymbol);
 
         // set fees
         _feesSymbol:= feesSymbol;
