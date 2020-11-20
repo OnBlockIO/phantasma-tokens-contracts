@@ -165,6 +165,7 @@ token GHOST {
     import Time;
     import UID;
     import Call;
+    import Cryptography;
 
     // constructor with owner
     constructor(owner:address)
@@ -234,7 +235,8 @@ token GHOST {
     private checkFees(numOfNfts:number, creator:address)
     {
         local feesBalance:number := Token.getBalance(creator, _feesSymbol);
-        local feesRequired:number := this.feesBase(numOfNfts) * 10 ^ Token.getDecimals(_feesSymbol);
+        local assetDecimals:number := 10 ^ Token.getDecimals(_feesSymbol);
+        local feesRequired:number := this.feesBase(numOfNfts) * assetDecimals;
         local missingFees:number := feesBalance - feesRequired;
 		Runtime.expect(missingFees > 0, "not enough fees to pay for this mint transaction, requires " + missingFees + " more " + _feesSymbol);
     }
@@ -246,12 +248,14 @@ token GHOST {
     {
         // calculate fees base
 		local feesBaseResult:number := this.feesBase(numOfNfts);
+        // calculate asset decimals
+		local assetDecimals:number := 10 ^ Token.getDecimals(_feesSymbol);
         // calculate infuse
-        local infuseAmount:number := _infuseMultiplier * 10 ^ Token.getDecimals(_feesSymbol);
+        local infuseAmount:number := _infuseMultiplier * assetDecimals;
         // calculate fees minus infuse
-        local feesTransfer:number := (feesBaseResult * 10 ^ Token.getDecimals(_feesSymbol)) - infuseAmount;
+        local feesTransfer:number := (feesBaseResult * assetDecimals) - infuseAmount;
         // calculate fees burn
-        local feesBurn:number := feesBaseResult * 10 ^ Token.getDecimals(_feesSymbol);
+        local feesBurn:number := feesBaseResult * assetDecimals;
         // fees payment
         Token.transfer(creator, _feesAddress, _feesSymbol, feesTransfer);
         // fees burn
@@ -270,12 +274,12 @@ token GHOST {
         if (editionMode == 2)
         {
             // create series unique
-            //NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, ghostNft);
+            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, ghostNft);
         }
         else
         {
             // create series duplicated
-            //NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
+            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
         }
 
     }
@@ -295,21 +299,21 @@ token GHOST {
         // check numOfNfts parameter
         Runtime.expect(numOfNfts > 0, "invalid number for numOfNfts, it should be > 0, received " + numOfNfts);
         Runtime.expect(numOfNfts <= editionMax, "invalid number for numOfNfts, it should be < editionMax, received " + numOfNfts);
-        if (editionMode == 2)
-        {
-            Runtime.expect(numOfNfts == 1, "invalid number for numOfNfts on unique mode series, it should be 1 max, received " + numOfNfts);
-        }
+        //if (editionMode == 2)
+        //{
+        //    Runtime.expect(numOfNfts == 1, "invalid number for numOfNfts on unique mode series, it should be 1 max, received " + numOfNfts);
+        //}
 
         // if fees multiplier > 0, check if enough for transfer fees and burn fees
-        if (_feesMultiplier > 0)
-        {
-            this.checkFees(numOfNfts, creator);
-        }
+        // if (_feesMultiplier > 0)
+        //{
+            // this.checkFees(numOfNfts, creator);
+        //}
 
         // check mintTicker parameter
         Runtime.expect(Token.exists(mintTicker), "invalid token for mintTicker, received " + mintTicker);
-        local flags:TokenFlags := Token.getFlags(mintTicker);
-        Runtime.expect(flags.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + mintTicker);
+        //local flags:TokenFlags := Token.getFlags(mintTicker);
+        //Runtime.expect((flags.isSet(TokenFlags.Fungible)) == false, "invalid fungible flag for " + mintTicker);
     }
 
     private validateMintSeries(royalties:decimal<2>, name:string, description:string, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent:string, listPrice:number, listPriceCurrency:string, listLastEndDate:timestamp, infusedAsset:string, infusedAmount:number)
@@ -368,13 +372,13 @@ token GHOST {
 
         // check listPriceCurrency parameter
         Runtime.expect(Token.exists(listPriceCurrency), "invalid token for listPriceCurrency, received " + listPriceCurrency);
-        local flagsSell:TokenFlags := Token.getFlags(listPriceCurrency);
-        Runtime.expect(flagsSell.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + listPriceCurrency);
+        //local flagsSell:TokenFlags := Token.getFlags(listPriceCurrency);
+        //Runtime.expect(flagsSell.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + listPriceCurrency);
 
         // check infusedAsset parameter
         Runtime.expect(Token.exists(infusedAsset), "invalid token for infusedAsset, received " + infusedAsset);
-        local flagsInfuse:TokenFlags := Token.getFlags(infusedAsset);
-        Runtime.expect(flagsInfuse.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + infusedAsset);
+        //local flagsInfuse:TokenFlags := Token.getFlags(infusedAsset);
+        //Runtime.expect(flagsInfuse.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + infusedAsset);
 
         // check infusedAmount parameter
         Runtime.expect(infusedAmount >= 0, "invalid number for infusedAmount, it should be >= 0, received " + infusedAmount);
@@ -554,26 +558,25 @@ token GHOST {
         this.validateSeries(editionId, editionMax, editionMode, creator, mintTicker, numOfNfts);
 
         // check if new series and create it
-        if (editionId == 0)
-        {
+        //if (editionId == 0)
+        //{
             // new series - create series ID
-            editionId := UID.generate();
+            //editionId := UID.generate();
 
             // new series - create series
-            this.createSeries(editionId, editionMax, editionMode, creator, mintTicker);
-        }
+            //this.createSeries(editionId, editionMax, editionMode, creator, mintTicker);
+        //}
 
         // validate mint token
-        this.validateMintSeries(royalties, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, lockedContent, listPrice, listPriceCurrency, listLastEndDate, infusedAsset, infusedAmount);
-
-        // local var for rom
-        local rom:ghostRom := Struct.ghostRom(Time.now(), creator, royalties, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3);
+        // this.validateMintSeries(royalties, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, lockedContent, listPrice, listPriceCurrency, listLastEndDate, infusedAsset, infusedAmount);
 
         // mint numOfNfts NFT
         while (numOfNfts > 0) {
+            // local var for rom
+            //local rom:ghostRom := Struct.ghostRom(Time.now(), creator, royalties, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3);
             // mint NFT
-            local tokenID:number := NFT.mint(creator, creator, mintTicker, rom, "", editionId);
-            this.infuseToken(creator, mintTicker, tokenID, infusedAsset, infusedAmount);
+            //local tokenID:number := NFT.mint(creator, creator, mintTicker, rom, "", editionId);
+            // this.infuseToken(creator, mintTicker, tokenID, infusedAsset, infusedAmount);
             if (listPrice > 0)
             {
                 //this.sellToken(creator, mintTicker, listPriceCurrency, tokenID, listPrice, listLastEndDate);
@@ -581,8 +584,11 @@ token GHOST {
             // if user wants locked content
             if (lockedContent.length() > 0)
             {
+                // encrypted lockedcontent
+                // local encryptedContent:string := Cryptography.AESEncrypt(lockedContent, 'ghostkey')
+
                 // set locked content storage map
-                _lockedStorageMap.set(tokenID, lockedContent);
+                //_lockedStorageMap.set(tokenID, lockedContent);
             }
             numOfNfts := numOfNfts - 1;
         }
@@ -602,14 +608,17 @@ token GHOST {
     {
         // check is witness and is current owner
         local nftInfo:NFT := NFT.read(nftSymbol, nftID);
-        Runtime.expect(from == nftInfo.Owner, "invalid owner address, received " + from + " while it should be " + nftInfo.Owner);
+        Runtime.expect(from == nftInfo.Owner, "invalid owner address");
 		Runtime.expect(Runtime.isWitness(from), "invalid witness");
 
         // return content if owner
         if (_lockedStorageMap.has(nftID))
         {
+            // local decryptedContent:string := Cryptography.AESDecrypt(_lockedStorageMap.get(nftID), 'ghostkey')
+            // return decryptedContent;
             return _lockedStorageMap.get(nftID);
         }
+        return "address not authorized to get the content";
     }
 
     /// @dev onUpgrade trigger.
@@ -617,9 +626,8 @@ token GHOST {
 	trigger onUpgrade(from:address)
     {
         // check is witness and is current owner
-        Runtime.expect(from == _addressOwner, "invalid owner address, received " + from + " while it should be " + _addressOwner);
+        Runtime.expect(from == _addressOwner, "invalid owner address");
 		Runtime.expect(Runtime.isWitness(from), "invalid witness");
-        return;
     }
 
     /// @dev onMint trigger.
