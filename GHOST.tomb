@@ -9,8 +9,8 @@ struct ghostRom
     created:timestamp;
     // Original owner of the NFT - address
     creator:address;
-    // Commission (in %) for the royalties - decimal<2>
-    royalties:decimal<2>;
+    // Commission (in %) for the royalties - number
+    royalties:number;
     // Name of the NFT - string
     name:string;
     // Description of the NFT - string
@@ -111,7 +111,7 @@ token GHOST {
             return _ROM.creator;
         }
 
-        property royalties:decimal<2> {
+        property royalties:number {
             return _ROM.royalties;
         }
 
@@ -264,6 +264,22 @@ token GHOST {
 		Token.burn(creator, _feesSymbol, feesBurn);
     }
 
+    /// @dev Internal method to check if a token is a NFT
+    /// @param asset - Asset symbol - string
+    /// @dev Returns bool.
+    private isNFT(asset:string):bool
+    {
+        local flags:TokenFlags := Token.getFlags(asset);
+        if (flags.isSet(TokenFlags.Fungible))
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
     /// @dev Create a new NFT series.
     /// @param editionId - ID of the NFT series - number
     /// @param editionMax - Edition Max the NFT series - number
@@ -314,15 +330,14 @@ token GHOST {
 
         // check mintTicker parameter
         Runtime.expect(Token.exists(mintTicker), "invalid token for mintTicker, received " + mintTicker);
-        //local flags:TokenFlags := Token.getFlags(mintTicker);
-        //Runtime.expect((flags.isSet(TokenFlags.Fungible)) == false, "invalid fungible flag for " + mintTicker);
+        Runtime.expect(this.isNFT(mintTicker), "invalid fungible flag for " + mintTicker);
     }
 
-    private validateMintSeries(royalties:decimal<2>, name:string, description:string, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent:string, listPrice:number, listPriceCurrency:string, listLastEndDate:timestamp, infusedAsset:string, infusedAmount:number)
+    private validateMintSeries(royalties:number, name:string, description:string, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent:string, listPrice:number, listPriceCurrency:string, listLastEndDate:timestamp, infusedAsset:string, infusedAmount:number)
     {
         // check royalties parameter
-        Runtime.expect(royalties >= 0.00, "invalid number for royalties, it should be between 0.00 and 50.00");
-        Runtime.expect(royalties <= 50.00, "invalid number for royalties, it should be between 0.00 and 50.00");
+        Runtime.expect(royalties >= 0, "invalid number for royalties, it should be between 0 and 50");
+        Runtime.expect(royalties <= 50, "invalid number for royalties, it should be between 0 and 50");
 
         // check name parameter
         Runtime.expect(name.length() >= 3, "invalid char length for name, it should be >= 3, received " + name.length());
@@ -366,13 +381,11 @@ token GHOST {
 
         // check listPriceCurrency parameter
         Runtime.expect(Token.exists(listPriceCurrency), "invalid token for listPriceCurrency, received " + listPriceCurrency);
-        //local flagsSell:TokenFlags := Token.getFlags(listPriceCurrency);
-        //Runtime.expect(flagsSell.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + listPriceCurrency);
+        Runtime.expect(this.isNFT(listPriceCurrency), "invalid fungible flag for " + listPriceCurrency);
 
         // check infusedAsset parameter
         Runtime.expect(Token.exists(infusedAsset), "invalid token for infusedAsset, received " + infusedAsset);
-        //local flagsInfuse:TokenFlags := Token.getFlags(infusedAsset);
-        //Runtime.expect(flagsInfuse.isSet(TokenFlags.Fungible) == false, "invalid fungible flag for " + infusedAsset);
+        Runtime.expect(this.isNFT(infusedAsset), "invalid fungible flag for " + infusedAsset);
 
         // check infusedAmount parameter
         Runtime.expect(infusedAmount >= 0, "invalid number for infusedAmount, it should be >= 0, received " + infusedAmount);
@@ -448,11 +461,8 @@ token GHOST {
         Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
 
         // check feesSymbol parameter
-		Runtime.expect(Token.exists(feesSymbol), "invalid token for feesSymbol, received " + feesSymbol);
-
-        // check feesSymbol is fungible
-        local flags:TokenFlags := Token.getFlags(feesSymbol);
-        Runtime.expect(flags.isSet(TokenFlags.Fungible) == true, "invalid fungible flag for " + feesSymbol);
+        Runtime.expect(Token.exists(feesSymbol), "invalid token for feesSymbol, received " + feesSymbol);
+        Runtime.expect(this.isNFT(feesSymbol), "invalid fungible flag for " + feesSymbol);
 
         // set fees
         _feesSymbol:= feesSymbol;
@@ -518,7 +528,7 @@ token GHOST {
     /// @param editionMax - Edition Max the NFT series - number
     /// @param editionMode - Edition Mode the NFT series, 1 for duplicate, 2 for unique - number
     /// @param creator - Original owner of the NFT - address
-    /// @param royalties - Commission (in %) for the royalties - decimal<2>
+    /// @param royalties - Commission (in %) for the royalties - number
     /// @param mintTicker - Ticker token on which to mint the NFT - string
     /// @param numOfNfts - Quantity of NFT to mint - number
     /// @param name - Name of the NFT to mint - string
@@ -537,7 +547,7 @@ token GHOST {
     /// @param listLastEndDate - NFT listing end date - timestamp
     /// @param infusedAsset - NFT infuse asset - string
     /// @param infusedAmount - NFT infuse amount - number
-    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, royalties:decimal<2>, mintTicker:string, numOfNfts:number, name:string, description:string, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent:string, listPrice:number, listPriceCurrency:string, listLastEndDate:timestamp, infusedAsset:string, infusedAmount:number)
+    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, royalties:number, mintTicker:string, numOfNfts:number, name:string, description:string, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent:string, listPrice:number, listPriceCurrency:string, listLastEndDate:timestamp, infusedAsset:string, infusedAmount:number)
     {
         // check if contract is active
         Runtime.expect(this.checkContractPaused() != true, "GhostMarket smart contract is currently paused");
@@ -562,14 +572,14 @@ token GHOST {
         //}
 
         // validate mint token
-        // this.validateMintSeries(royalties, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, lockedContent, listPrice, listPriceCurrency, listLastEndDate, infusedAsset, infusedAmount);
+        this.validateMintSeries(royalties, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, lockedContent, listPrice, listPriceCurrency, listLastEndDate, infusedAsset, infusedAmount);
 
         // mint numOfNfts NFT
         while (numOfNfts > 0) {
             // local var for rom
-            //local rom:ghostRom := Struct.ghostRom(Time.now(), creator, royalties, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3);
+            // local rom:ghostRom := ghostRom(Time.now(), creator, royalties, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3);
             // mint NFT
-            //local tokenID:number := NFT.mint(creator, creator, mintTicker, rom, "", editionId);
+            // local tokenID:number := NFT.mint(creator, creator, mintTicker, rom, "", editionId);
             // this.infuseToken(creator, mintTicker, tokenID, infusedAsset, infusedAmount);
             if (listPrice > 0)
             {
@@ -578,11 +588,14 @@ token GHOST {
             // if user wants locked content
             if (lockedContent.length() > 0)
             {
-                // encrypted lockedcontent
-                // local encryptedContent:string := Cryptography.AESEncrypt(lockedContent, 'ghostkey')
+                // encryption key
+                local encryptionKey:string := "ghostkey";
+
+                // encrypted content
+                local encryptedContent:string := Cryptography.AESEncrypt(lockedContent.toBytes(), encryptionKey.toBytes());
 
                 // set locked content storage map
-                //_lockedStorageMap.set(tokenID, lockedContent);
+                // _lockedStorageMap.set(tokenID, encryptedContent);
             }
             numOfNfts := numOfNfts - 1;
         }
@@ -608,9 +621,16 @@ token GHOST {
         // return content if owner
         if (_lockedStorageMap.has(nftID))
         {
-            // local decryptedContent:string := Cryptography.AESDecrypt(_lockedStorageMap.get(nftID), 'ghostkey')
-            // return decryptedContent;
-            return _lockedStorageMap.get(nftID);
+            // encryption key
+            local encryptionKey:string := "ghostkey";
+
+            // encrypted content
+            local encryptedContent:string := _lockedStorageMap.get(nftID);
+
+            // decrypted content
+            local decryptedContent:string := Cryptography.AESDecrypt(encryptedContent.toBytes(), encryptionKey.toBytes());
+
+            return decryptedContent;
         }
         return "address not authorized to get the content";
     }
