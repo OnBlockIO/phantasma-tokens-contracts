@@ -161,7 +161,7 @@ token GHOST {
 
     }
 
-    // libraries import
+    // librairies import
     import Runtime;
     import Token;
 	import Map;
@@ -171,7 +171,7 @@ token GHOST {
     import Call;
     import Cryptography;
 
-    // constructor with owner
+    // constructor with owner and all global var
     constructor(owner:address)
     {
         _addressOwner:= owner;
@@ -240,10 +240,13 @@ token GHOST {
     {
         // calculate asset decimals
         local assetDecimals:number := 10 ^ Token.getDecimals(_feesSymbol);
+
         // current balance
         local balance:number := Token.getBalance(creator, _feesSymbol);
+
         // calculate required fees
         local feesRequired:number := this.feesBase(numOfNfts) * assetDecimals;
+
         // calculate missing fees
         local feesMissing:number := (feesRequired - balance) / assetDecimals;
 		Runtime.expect(feesMissing < 0, "not enough fees to pay for this mint transaction, requires " + feesMissing + " more " + _feesSymbol);
@@ -256,14 +259,19 @@ token GHOST {
     {
         // calculate asset decimals
 		local assetDecimals:number := 10 ^ Token.getDecimals(_feesSymbol);
+
         // calculate fees base
 		local feesBaseResult:number := this.feesBase(numOfNfts);
+
         // calculate fees minus infuse
         local feesTransfer:number := (feesBaseResult - _infuseMultiplier) * assetDecimals;
+
         // calculate fees burn
         local feesBurn:number := feesBaseResult * assetDecimals;
+
         // fees payment
         Token.transfer(creator, _feesAddress, _feesSymbol, feesTransfer);
+
         // fees burn
 		Token.burn(creator, _feesSymbol, feesBurn);
     }
@@ -273,6 +281,7 @@ token GHOST {
     /// @dev Returns bool.
     private isNFT(asset:string):bool
     {
+        // check tokenflag isFungible
         local flags:TokenFlags := Token.getFlags(asset);
         if (flags.isSet(TokenFlags.Fungible))
         {
@@ -284,28 +293,13 @@ token GHOST {
         }
     }
 
-    /// @dev Create a new NFT series.
+    /// @dev Internal method to validate a NFT series.
     /// @param editionId - ID of the NFT series - number
     /// @param editionMax - Edition Max the NFT series - number
     /// @param editionMode - Edition Mode the NFT series, 1 for duplicate, 2 for unique - number
     /// @param creator - Original owner of the NFT - address
     /// @param mintTicker - Ticker token on which to mint the NFT - string
-    private createSeries(editionId:number, editionMax:number, editionMode:number, creator:address, mintTicker:string)
-    {
-        // TokenSeries mode
-        if (editionMode == 2)
-        {
-            // create series unique
-            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, ghostNft);
-        }
-        else
-        {
-            // create series duplicated
-            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
-        }
-
-    }
-
+    /// @param numOfNfts - Quantity of NFT to mint - number
     private validateSeries(editionId:number, editionMax:number, editionMode:number, creator:address, mintTicker:string, numOfNfts:number)
     {
         // check editionId parameter
@@ -337,7 +331,24 @@ token GHOST {
         Runtime.expect(this.isNFT(mintTicker), "invalid fungible flag for " + mintTicker);
     }
 
-    private validateMintSeries(royalties:number, name:string, description:string, type:number, imageURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, listPrice:number, listPriceCurrency:string, infusedAsset:string, infusedAmount:number)
+    /// @dev Internal method to validate a NFT mint.
+    /// @param royalties - Commission (in %) for the royalties - number
+    /// @param name - Name of the NFT to mint - string
+    /// @param description - Description of the NFT to mint - string
+    /// @param type - Type of the NFT - number
+    /// @param imageURL - Image URL of the NFT - IPFS hash - string
+    /// @param infoURL - Token URL of the NFT - External API - string
+    /// @param attributeType1 - Extended properties of the NFT - string
+    /// @param attributeValue1 - Extended properties of the NFT - string
+    /// @param attributeType2 - Extended properties of the NFT - string
+    /// @param attributeValue2 - Extended properties of the NFT - string
+    /// @param attributeType3 - Extended properties of the NFT - string
+    /// @param attributeValue3 - Extended properties of the NFT - string
+    /// @param listPrice - NFT listing price - number
+    /// @param listPriceCurrency - NFT listing price currency - string
+    /// @param infusedAsset - NFT infuse asset - string
+    /// @param infusedAmount - NFT infuse amount - number
+    private validateMint(royalties:number, name:string, description:string, type:number, imageURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, listPrice:number, listPriceCurrency:string, infusedAsset:string, infusedAmount:number)
     {
         // check royalties parameter
         Runtime.expect(royalties >= 0, "invalid number for royalties, it should be between 0 and 50");
@@ -391,6 +402,12 @@ token GHOST {
         }
     }
 
+    /// @dev Internal method to infuse NFT with an asset.
+    /// @param creator - Original owner of the NFT - address
+    /// @param mintTicker - Ticker token on which to mint the NFT - string
+    /// @param tokenID - NFT ID - number
+    /// @param infusedAsset - NFT infuse asset - string
+    /// @param infusedAmount - NFT infuse amount - number
     private infuseToken(creator:address, mintTicker:string, tokenID:number, infusedAsset:string, infusedAmount:number)
     {
         // infuse min value if user does not want to infuse
@@ -416,12 +433,22 @@ token GHOST {
         }
     }
 
+    /// @dev Internal method to sell NFT on market contract.
+    /// @param creator - Original owner of the NFT - address
+    /// @param mintTicker - Ticker token on which to mint the NFT - string
+    /// @param listPriceCurrency - NFT listing price currency - string
+    /// @param tokenID - NFT ID - number
+    /// @param listPrice - NFT listing price - number
+    /// @param listLastEndDate - NFT listing end date - timestamp
     private sellToken(creator:address, mintTicker:string, listPriceCurrency:string, tokenID:number, listPrice:number, listLastEndDate:timestamp)
     {
         // sell token based on user choice
         Call.contract("market", "SellToken", creator, mintTicker, listPriceCurrency, tokenID, listPrice, listLastEndDate);
     }
 
+    /// @dev Internal method to set the locked content storage map.
+    /// @param lockedContent - NFT locked content hash - string
+    /// @param tokenID - NFT ID - number
     private lockContent(lockedContent:string, tokenID:number)
     {
         // encryption key
@@ -431,10 +458,55 @@ token GHOST {
         local encryptedContent:string := Cryptography.AESEncrypt(lockedContent.toBytes(), encryptionKey.toBytes());
 
         // set locked content storage map
-        //_lockedStorageMap.set(tokenID, encryptedContent);
+        _lockedStorageMap.set(tokenID, encryptedContent);
     }
 
-    private mintSeries(creator:address, royalties:number, name:string, description:string, type:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, mintTicker:string, editionId:number, listPriceCurrency:string, listPrice:number, listLastEndDate:timestamp, lockedContent:string, numOfNfts:number, infusedAsset:string, infusedAmount:number)
+    /// @dev Internal method to create a new NFT series.
+    /// @param editionId - ID of the NFT series - number
+    /// @param editionMax - Edition Max the NFT series - number
+    /// @param editionMode - Edition Mode the NFT series, 1 for duplicate, 2 for unique - number
+    /// @param creator - Original owner of the NFT - address
+    /// @param mintTicker - Ticker token on which to mint the NFT - string
+    private createSeries(editionId:number, editionMax:number, editionMode:number, creator:address, mintTicker:string)
+    {
+        // TokenSeries mode
+        if (editionMode == 2)
+        {
+            // create series unique
+            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, ghostNft);
+        }
+        else
+        {
+            // create series duplicated
+            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
+        }
+
+    }
+
+    /// @dev Internal method to start a NFT mint.
+    /// @param creator - Original owner of the NFT - address
+    /// @param royalties - Commission (in %) for the royalties - number
+    /// @param name - Name of the NFT to mint - string
+    /// @param description - Description of the NFT to mint - string
+    /// @param type - Type of the NFT - number
+    /// @param imageURL - Image URL of the NFT - IPFS hash - string
+    /// @param infoURL - Token URL of the NFT - External API - string
+    /// @param attributeType1 - Extended properties of the NFT - string
+    /// @param attributeValue1 - Extended properties of the NFT - string
+    /// @param attributeType2 - Extended properties of the NFT - string
+    /// @param attributeValue2 - Extended properties of the NFT - string
+    /// @param attributeType3 - Extended properties of the NFT - string
+    /// @param attributeValue3 - Extended properties of the NFT - string
+    /// @param mintTicker - Ticker token on which to mint the NFT - string
+    /// @param editionId - ID of the NFT series - number
+    /// @param listPriceCurrency - NFT listing price currency - string
+    /// @param listPrice - NFT listing price - number
+    /// @param listLastEndDate - NFT listing end date - timestamp
+    /// @param lockedContent - NFT locked content hash - string
+    /// @param numOfNfts - Quantity of NFT to mint - number
+    /// @param infusedAsset - NFT infuse asset - string
+    /// @param infusedAmount - NFT infuse amount - number
+    private mint(creator:address, royalties:number, name:string, description:string, type:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, mintTicker:string, editionId:number, listPriceCurrency:string, listPrice:number, listLastEndDate:timestamp, lockedContent:string, numOfNfts:number, infusedAsset:string, infusedAmount:number)
     {
         // mint numOfNfts NFT
         while (numOfNfts > 0) {
@@ -447,11 +519,13 @@ token GHOST {
 
             // infuse NFT
             this.infuseToken(creator, mintTicker, tokenID, infusedAsset, infusedAmount);
+
+            // sell NFT
             if (listPrice > 0)
             {
-                // sell NFT
                 this.sellToken(creator, mintTicker, listPriceCurrency, tokenID, listPrice, listLastEndDate);
             }
+
             // if user wants locked content
             if (lockedContent.length() > 0)
             {
@@ -459,6 +533,8 @@ token GHOST {
                 this.lockContent(lockedContent,tokenID);
 
             }
+
+            // loop number change
             numOfNfts := numOfNfts - 1;
         }
     }
@@ -481,7 +557,7 @@ token GHOST {
         // check is witness and is current owner
         Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
 
-        // set new status
+        // set contract status
         _contractPaused:= pause;
     }
 
@@ -495,7 +571,7 @@ token GHOST {
         // check feesMultiplier parameter
         Runtime.expect(feesMultiplier >= 0, "invalid number for feesMultiplier, it should be >= 0, received " + feesMultiplier);
 
-        // set fees
+        // set fees multiplier
         _feesMultiplier:= feesMultiplier;
     }
 
@@ -510,7 +586,7 @@ token GHOST {
         Runtime.expect(Token.exists(feesSymbol), "invalid token for feesSymbol, received " + feesSymbol);
         Runtime.expect(this.isNFT(feesSymbol) == false, "invalid fungible flag for " + feesSymbol);
 
-        // set fees
+        // set fees symbol
         _feesSymbol:= feesSymbol;
     }
 
@@ -529,7 +605,7 @@ token GHOST {
         // check feesThresholdValue parameter
         Runtime.expect(feesThresholdValue > 0, "invalid number for feesThresholdValue, it should be > 0, received " + feesThresholdValue);
 
-        // set fees
+        // set fees thresholds
         if (feesThresholdIndex == 1)
         {
             _feesThreshold1:= feesThresholdValue;
@@ -551,7 +627,7 @@ token GHOST {
         // check is witness and is current owner
         Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
 
-        // set fees
+        // set fees address
         _feesAddress:= feesAddress;
     }
 
@@ -579,6 +655,7 @@ token GHOST {
     /// @param numOfNfts - Quantity of NFT to mint - number
     /// @param name - Name of the NFT to mint - string
     /// @param description - Description of the NFT to mint - string
+    /// @param type - Type of the NFT - number
     /// @param imageURL - Image URL of the NFT - IPFS hash - string
     /// @param infoURL - Token URL of the NFT - External API - string
     /// @param attributeType1 - Extended properties of the NFT - string
@@ -607,9 +684,12 @@ token GHOST {
         // validate series
         this.validateSeries(editionId, editionMax, editionMode, creator, mintTicker, numOfNfts);
 
-        // check if new series and create it
+        // check if new series, then validate and create it
         if (editionId == 0)
         {
+            // validate mint tokens if new series
+            this.validateMint(royalties, name, description, type, imageURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, listPrice, listPriceCurrency, infusedAsset, infusedAmount);
+
             // new series - create series ID
             editionId := UID.generate();
 
@@ -617,10 +697,8 @@ token GHOST {
             this.createSeries(editionId, editionMax, editionMode, creator, mintTicker);
         }
 
-        // validate mint token
-        this.validateMintSeries(royalties, name, description, type, imageURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, listPrice, listPriceCurrency, infusedAsset, infusedAmount);
-
-        this.mintSeries(creator, royalties, name, description, type, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, listPriceCurrency, listPrice, listLastEndDate, lockedContent, numOfNfts, infusedAsset, infusedAmount);
+        // mint tokens
+        this.mint(creator, royalties, name, description, type, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, listPriceCurrency, listPrice, listLastEndDate, lockedContent, numOfNfts, infusedAsset, infusedAmount);
 
         // if feesMultipler > 0, pay service fees and pay burn fees
         if (_feesMultiplier > 0)
@@ -629,9 +707,10 @@ token GHOST {
         }
     }
 
-    /// @dev get locked content of a specific nft series.
+    /// @dev Get locked content of a specific pair symbol/nftid.
     /// @param nftSymbol - Symbol of the NFT to query for content - string
-    /// @param nftID - Locked content of a specific NFT - number
+    /// @param nftID - NFT ID - number
+    /// @dev Returns string.
     public getLockedContent(nftSymbol: string, nftID:number):string
     {
         // check is witness and is current owner
@@ -669,6 +748,7 @@ token GHOST {
     /// @param from - Amount - number
     trigger onMint(from:address, to:address, symbol:string, amount:number)
     {
+        // enforce mint only from contract
         Runtime.expect(Runtime.context() == _contractName, "minting a nft is only supported from within " + _contractName + " contract");
     }
 
@@ -676,6 +756,7 @@ token GHOST {
     /// @param from - Address from - address
     trigger onSeries(from: address)
     {
+        // enforce create series only from contract
         Runtime.expect(Runtime.context() == _contractName, "creating a series is only supported from within " + _contractName + " contract");
     }
 
