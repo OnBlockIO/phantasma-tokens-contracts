@@ -344,11 +344,12 @@ token GHOST {
     /// @param attributeValue2 - Extended properties of the NFT - string
     /// @param attributeType3 - Extended properties of the NFT - string
     /// @param attributeValue3 - Extended properties of the NFT - string
+    /// @param lockedContent - NFT locked content hash - string
     /// @param listPrice - NFT listing price - number
     /// @param listPriceCurrency - NFT listing price currency - string
     /// @param infusedAsset - NFT infuse asset - string
     /// @param infusedAmount - NFT infuse amount - number
-    private validateMint(royalties:number, name:string, description:string, type:number, imageURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, listPrice:number, listPriceCurrency:string, infusedAsset:string, infusedAmount:number)
+    private validateMint(royalties:number, name:string, description:string, type:number, imageURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent: string, listPrice:number, listPriceCurrency:string, infusedAsset:string, infusedAmount:number)
     {
         // check royalties parameter
         Runtime.expect(royalties >= 0, "invalid number for royalties, it should be between 0 and 50");
@@ -360,7 +361,7 @@ token GHOST {
 
         // check description parameter
         Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
-        Runtime.expect(description.length() <= 100, "invalid char length for description, it should be <= 100, received " + description.length());
+        Runtime.expect(description.length() <= 200, "invalid char length for description, it should be <= 200, received " + description.length());
 
         // check type parameter
         Runtime.expect(type > 0, "invalid number for type, it should be > 0, received " + type);
@@ -371,22 +372,25 @@ token GHOST {
         // check extended parameters
         if (attributeType1.length() > 0)
         {
-            Runtime.expect(attributeType1.length() < 15, "invalid extended attributeType1 length, received " + attributeType1.length());
+            Runtime.expect(attributeType1.length() <= 15, "invalid extended attributeType1 length, received " + attributeType1.length());
             Runtime.expect(attributeValue1.length() > 0, "invalid extended attributeValue1 length, received " + attributeValue1.length());
-            Runtime.expect(attributeValue1.length() < 15, "invalid extended attributeValue1 length, received " + attributeValue1.length());
+            Runtime.expect(attributeValue1.length() <= 15, "invalid extended attributeValue1 length, received " + attributeValue1.length());
         }
         if (attributeType2.length() > 0)
         {
-            Runtime.expect(attributeType2.length() < 15, "invalid extended attributeType2 length, received " + attributeType2.length());
+            Runtime.expect(attributeType2.length() <= 15, "invalid extended attributeType2 length, received " + attributeType2.length());
             Runtime.expect(attributeValue2.length() > 0, "invalid extended attributeType2 length, received " + attributeValue2.length());
-            Runtime.expect(attributeValue2.length() < 15, "invalid extended attributeValue2 length, received " + attributeValue2.length());
+            Runtime.expect(attributeValue2.length() <= 15, "invalid extended attributeValue2 length, received " + attributeValue2.length());
         }
         if (attributeType3.length() > 0)
         {
-            Runtime.expect(attributeType3.length() < 15, "invalid extended attributeType3 length, received " + attributeType3.length());
+            Runtime.expect(attributeType3.length() <= 15, "invalid extended attributeType3 length, received " + attributeType3.length());
             Runtime.expect(attributeValue3.length() > 0, "invalid extended attributeValue3 length, received " + attributeValue3.length());
-            Runtime.expect(attributeValue3.length() < 15, "invalid extended attributeValue3 length, received " + attributeValue3.length());
+            Runtime.expect(attributeValue3.length() <= 15, "invalid extended attributeValue3 length, received " + attributeValue3.length());
         }
+
+        // check lockedContent parameter
+        Runtime.expect(lockedContent.length() <= 50, "invalid char length for lockedContent, it should be <= 50, received " + lockedContent.length());
 
         // check listPrice & listPriceCurrency parameter
         if (listPrice > 0)
@@ -424,11 +428,8 @@ token GHOST {
             // if user wants to infuse
             if (infusedAmount > 0)
             {
-                // local var for infuseAmountUser
-                local infuseAmountUser:number := infusedAmount * 10 ^ Token.getDecimals(infusedAsset);
-
                 // infuse NFT with user value
-                NFT.infuse(creator, mintTicker, tokenID, infusedAsset, infuseAmountUser);
+                NFT.infuse(creator, mintTicker, tokenID, infusedAsset, infusedAmount);
             }
         }
     }
@@ -452,7 +453,7 @@ token GHOST {
     private lockContent(lockedContent:string, tokenID:number)
     {
         // encryption key
-        local encryptionKey:string := "ghostkey";
+        local encryptionKey:string := "ghostkeyghostkeyghostkeyghostkeyghostkeyghostkeyghostkeyghostkey";
 
         // encrypted content
         local encryptedContent:string := Cryptography.AESEncrypt(lockedContent.toBytes(), encryptionKey.toBytes());
@@ -688,7 +689,7 @@ token GHOST {
         if (editionId == 0)
         {
             // validate mint tokens if new series
-            this.validateMint(royalties, name, description, type, imageURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, listPrice, listPriceCurrency, infusedAsset, infusedAmount);
+            this.validateMint(royalties, name, description, type, imageURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, lockedContent, listPrice, listPriceCurrency, infusedAsset, infusedAmount);
 
             // new series - create series ID
             editionId := UID.generate();
@@ -721,7 +722,7 @@ token GHOST {
         if (_lockedStorageMap.has(nftID))
         {
             // encryption key
-            local encryptionKey:string := "ghostkey";
+            local encryptionKey:string := "ghostkeyghostkeyghostkeyghostkeyghostkeyghostkeyghostkeyghostkey";
 
             // encrypted content
             local encryptedContent:string := _lockedStorageMap.get(nftID);
@@ -749,7 +750,7 @@ token GHOST {
     trigger onMint(from:address, to:address, symbol:string, amount:number)
     {
         // enforce mint only from contract
-        Runtime.expect(Runtime.context() == _contractName, "minting a nft is only supported from within " + _contractName + " contract");
+        Runtime.expect(Runtime.context() == "GHOST", "minting nft is only supported from within GHOST contract");
     }
 
     /// @dev onSeries trigger.
@@ -757,7 +758,7 @@ token GHOST {
     trigger onSeries(from: address)
     {
         // enforce create series only from contract
-        Runtime.expect(Runtime.context() == _contractName, "creating a series is only supported from within " + _contractName + " contract");
+        Runtime.expect(Runtime.context() == "GHOST", "creating a series is only supported from within GHOST contract");
     }
 
 }
