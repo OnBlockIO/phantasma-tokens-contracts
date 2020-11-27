@@ -263,8 +263,11 @@ token GHOST {
         // calculate fees base
 		local feesBaseResult:number := this.feesBase(numOfNfts);
 
+        // calculate fees infuse
+		local feesInfuse:number := _infuseMultiplier * numOfNfts;
+
         // calculate fees minus infuse
-        local feesTransfer:number := (feesBaseResult - _infuseMultiplier) * assetDecimals;
+        local feesTransfer:number := (feesBaseResult - feesInfuse) * assetDecimals;
 
         // calculate fees burn
         local feesBurn:number := feesBaseResult * assetDecimals;
@@ -453,13 +456,13 @@ token GHOST {
     private lockContent(lockedContent:string, tokenID:number)
     {
         // encryption key
-        local encryptionKey:string := "ghostkeyghostkeyghostkeyghostkeyghostkeyghostkeyghostkeyghostkey";
+        // local encryptionKey:string := "d25a4cdb3f1b347efabb56da18069dfe";
 
         // encrypted content
-        local encryptedContent:string := Cryptography.AESEncrypt(lockedContent.toBytes(), encryptionKey.toBytes());
+        // local encryptedContent:bytes := Cryptography.AESEncrypt(lockedContent.toBytes(), encryptionKey.toBytes());
 
         // set locked content storage map
-        _lockedStorageMap.set(tokenID, encryptedContent);
+        _lockedStorageMap.set(tokenID, lockedContent);
     }
 
     /// @dev Internal method to create a new NFT series.
@@ -715,22 +718,23 @@ token GHOST {
     public getLockedContent(nftSymbol: string, nftID:number):string
     {
         // check is witness and is current owner
-        local nftInfo:NFT := NFT.read(nftSymbol, nftID);
-		Runtime.expect(Runtime.isWitness(nftInfo.Owner), "invalid witness");
+        // local nftInfo:NFT := NFT.read(nftSymbol, nftID);
+		// Runtime.expect(Runtime.isWitness(nftInfo.Owner), "invalid witness");
 
         // return content if owner
         if (_lockedStorageMap.has(nftID))
         {
             // encryption key
-            local encryptionKey:string := "ghostkeyghostkeyghostkeyghostkeyghostkeyghostkeyghostkeyghostkey";
+            // local encryptionKey:string := "d25a4cdb3f1b347efabb56da18069dfe";
 
             // encrypted content
-            local encryptedContent:string := _lockedStorageMap.get(nftID);
+            // local encryptedContent:string := _lockedStorageMap.get(nftID);
 
             // decrypted content
-            local decryptedContent:string := Cryptography.AESDecrypt(encryptedContent.toBytes(), encryptionKey.toBytes());
+            // local decryptedContent:string := Cryptography.AESDecrypt(encryptedContent.toBytes(), encryptionKey.toBytes());
 
-            return decryptedContent;
+            // return decryptedContent;
+            return _lockedStorageMap.get(nftID);
         }
     }
 
