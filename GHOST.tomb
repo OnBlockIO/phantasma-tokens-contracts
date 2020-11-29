@@ -53,7 +53,7 @@ token GHOST {
     // global storage for contract pause
     global _contractPaused:bool;
     // global storage for locked content
-    global _lockedStorageMap: storage_map<number, string>;
+    global _lockedStorageMap: storage_map<number, bytes>;
     // global storage for fees multiplier
     global _feesMultiplier:number;
 	// global storage for fees symbol
@@ -171,6 +171,8 @@ token GHOST {
     import Call;
     import Cryptography;
     import Market;
+    import Storage;
+    import Bytes;
 
     // constructor with owner and all global var
     constructor(owner:address)
@@ -460,10 +462,10 @@ token GHOST {
         local encryptionKey:string := "d25a4cdb3f1b347efabb56da18069dfe";
 
         // encrypted content
-        local encryptedContent:bytes := Cryptography.AESEncrypt(lockedContent.toBytes(), encryptionKey.toBytes());
+        local encryptedContentBytes: bytes := Cryptography.AESEncrypt(lockedContent.toBytes(), encryptionKey.toBytes());
 
         // set locked content storage map
-        _lockedStorageMap.set(tokenID, lockedContent);
+        _lockedStorageMap.set(tokenID, encryptedContentBytes);
     }
 
     /// @dev Internal method to create a new NFT series.
@@ -535,7 +537,7 @@ token GHOST {
             if (lockedContent.length() > 0)
             {
                 // lock content
-                this.lockContent(lockedContent,tokenID);
+                this.lockContent(lockedContent, tokenID);
 
             }
 
@@ -719,23 +721,26 @@ token GHOST {
     public getLockedContent(nftSymbol: string, nftID:number):string
     {
         // check is witness and is current owner
-        local nftInfo:NFT := NFT.read(nftSymbol, nftID);
-		// Runtime.expect(Runtime.isWitness(nftInfo.Owner), "invalid witness");
+        local nftInfo:ghostRom := NFT.readROM<ghostRom>(nftSymbol, nftID);
+		Runtime.expect(Runtime.isWitness(nftInfo.creator), "invalid witness");
 
-        // return content if owner
+        // return content if available
         if (_lockedStorageMap.has(nftID))
         {
             // encryption key
-            // local encryptionKey:string := "d25a4cdb3f1b347efabb56da18069dfe";
+            local encryptionKey:string := "d25a4cdb3f1b347efabb56da18069dfe";
 
             // encrypted content
-            // local encryptedContent:string := _lockedStorageMap.get(nftID);
+            local encryptedContentBytes:bytes := _lockedStorageMap.get(nftID);
 
-            // decrypted content
-            // local decryptedContent:string := Cryptography.AESDecrypt(encryptedContent.toBytes(), encryptionKey.toBytes());
+            // decrypted content bytes
+            local decryptedContentBytes:bytes := Cryptography.AESDecrypt(encryptedContentBytes, encryptionKey.toBytes());
 
-            // return decryptedContent;
-            return _lockedStorageMap.get(nftID);
+            // decrypted content string
+            local decryptedContent:string := decryptedContentBytes.toString();
+
+            // return string
+            return decryptedContent;
         }
     }
 
