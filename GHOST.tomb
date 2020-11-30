@@ -33,6 +33,8 @@ struct ghostRom
     attrT3:string;
     // Extended attribute3 value - string
     attrV3:string;
+    // Locked content stored in contract - bool
+    hasLocked:bool;
 }
 
 // ghostRam struct
@@ -159,6 +161,10 @@ token GHOST {
             return _ROM.attrV3;
         }
 
+        property hasLocked:bool {
+            return _ROM.hasLocked;
+        }
+
     }
 
     // librairies import
@@ -184,8 +190,8 @@ token GHOST {
 		_feesMultiplier:= 1;
 		_feesSymbol:= "KCAL";
 		_feesThreshold1:= 10;
-		_feesThreshold2:= 40;
-		_feesThreshold3:= 70;
+		_feesThreshold2:= 25;
+		_feesThreshold3:= 50;
 		_feesAddress:= @P2KLzxq8cUi47URLZZYcLs54WPVYnknrHWVryUUUqhuhq5K; // ghostmarket
         _infuseMultiplier:= 1;
     }
@@ -211,25 +217,25 @@ token GHOST {
         // if < threshold 1
         if (numOfNfts < _feesThreshold1)
         {
-            feesBase := 10 * _feesMultiplier;
+            feesBase := 15 * _feesMultiplier;
         }
 		else {
     		// if < threshold 2
 			if (numOfNfts >= _feesThreshold1 and numOfNfts < _feesThreshold2)
 			{
-				feesBase:= 25 * _feesMultiplier;
+				feesBase:= 30 * _feesMultiplier;
 			}
 			else
 			{
       			// if < threshold 3
 				if (numOfNfts >= _feesThreshold2 and numOfNfts < _feesThreshold3)
 				{
-					feesBase := 50 * _feesMultiplier;
+					feesBase := 55 * _feesMultiplier;
 				}
         		// if > threshold 3
 				else
 				{
-					feesBase := 100 * _feesMultiplier;
+					feesBase := 105 * _feesMultiplier;
 				}
 			}
 		}
@@ -514,13 +520,14 @@ token GHOST {
     /// @param numOfNfts - Quantity of NFT to mint - number
     /// @param infusedAsset - NFT infuse asset - string
     /// @param infusedAmount - NFT infuse amount - number
-    private mint(isNewSeries:bool, creator:address, royalties:number, name:string, description:string, type:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, mintTicker:string, editionId:number, listPriceCurrency:string, listPrice:number, listLastEndDate:timestamp, lockedContent:string, numOfNfts:number, infusedAsset:string, infusedAmount:number)
+    /// @param hasLocked - Locked content stored in contract - bool
+    private mint(isNewSeries:bool, creator:address, royalties:number, name:string, description:string, type:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, mintTicker:string, editionId:number, listPriceCurrency:string, listPrice:number, listLastEndDate:timestamp, lockedContent:string, numOfNfts:number, infusedAsset:string, infusedAmount:number, hasLocked:bool)
     {
         // mint numOfNfts NFT
         while (numOfNfts > 0) {
 
             // local var for rom
-            local rom:ghostRom := Struct.ghostRom(Time.now(), creator, royalties, type, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3);
+            local rom:ghostRom := Struct.ghostRom(Time.now(), creator, royalties, type, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, hasLocked);
             local tokenID:number;
 
             // if new series pass full rom
@@ -687,7 +694,8 @@ token GHOST {
     /// @param listLastEndDate - NFT listing end date - timestamp
     /// @param infusedAsset - NFT infuse asset - string
     /// @param infusedAmount - NFT infuse amount - number
-    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, royalties:number, mintTicker:string, numOfNfts:number, name:string, description:string, type:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent:string, listPrice:number, listPriceCurrency:string, listLastEndDate:timestamp, infusedAsset:string, infusedAmount:number)
+    /// @param hasLocked - Locked content stored in contract - bool
+    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, royalties:number, mintTicker:string, numOfNfts:number, name:string, description:string, type:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent:string, listPrice:number, listPriceCurrency:string, listLastEndDate:timestamp, infusedAsset:string, infusedAmount:number, hasLocked:bool)
     {
         // check if contract is active
         Runtime.expect(this.checkContractPaused() != true, "GhostMarket smart contract is currently paused");
@@ -721,7 +729,7 @@ token GHOST {
         }
 
         // mint tokens
-        this.mint(isNewSeries, creator, royalties, name, description, type, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, listPriceCurrency, listPrice, listLastEndDate, lockedContent, numOfNfts, infusedAsset, infusedAmount);
+        this.mint(isNewSeries, creator, royalties, name, description, type, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, listPriceCurrency, listPrice, listLastEndDate, lockedContent, numOfNfts, infusedAsset, infusedAmount, hasLocked);
 
         // if feesMultipler > 0, pay service fees and pay burn fees
         if (_feesMultiplier > 0)
