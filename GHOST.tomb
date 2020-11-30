@@ -60,12 +60,6 @@ token GHOST {
     global _feesMultiplier:number;
 	// global storage for fees symbol
     global _feesSymbol:string;
-    // global storage for fees threshold1
-    global _feesThreshold1:number;
-    // global storage for fees threshold2
-    global _feesThreshold2:number;
-    // global storage for fees threshold3
-    global _feesThreshold3:number;
 	// global storage for fees address
 	global _feesAddress:address;
     // global storage for infuse multiplier
@@ -89,12 +83,6 @@ token GHOST {
     property feesMultiplier:number = _feesMultiplier;
 	// token fees symbol
     property feesSymbol:string = _feesSymbol;
-    // token fees threshold1
-    property feesThreshold1:number = _feesThreshold1;
-    // token fees threshold2
-    property feesThreshold2:number = _feesThreshold2;
-    // token fees threshold2
-    property feesThreshold3:number = _feesThreshold3;
 	// token fees address
     property feesAddress:address = _feesAddress;
     // token infuse multiplier
@@ -189,9 +177,6 @@ token GHOST {
 		_contractPaused:= false;
 		_feesMultiplier:= 1;
 		_feesSymbol:= "KCAL";
-		_feesThreshold1:= 10;
-		_feesThreshold2:= 25;
-		_feesThreshold3:= 50;
 		_feesAddress:= @P2KLzxq8cUi47URLZZYcLs54WPVYnknrHWVryUUUqhuhq5K; // ghostmarket
         _infuseMultiplier:= 1;
     }
@@ -213,32 +198,10 @@ token GHOST {
     /// @dev Returns number.
     private feesBase(numOfNfts:number):number
     {
-		local feesBase:number;
-        // if < threshold 1
-        if (numOfNfts <= _feesThreshold1)
-        {
-            feesBase := 15 * _feesMultiplier;
-        }
-		else {
-    		// if < threshold 2
-			if (numOfNfts > _feesThreshold1 and numOfNfts <= _feesThreshold2)
-			{
-				feesBase:= 30 * _feesMultiplier;
-			}
-			else
-			{
-      			// if < threshold 3
-				if (numOfNfts > _feesThreshold2 and numOfNfts <= _feesThreshold3)
-				{
-					feesBase := 55 * _feesMultiplier;
-				}
-        		// if > threshold 3
-				else
-				{
-					feesBase := 105 * _feesMultiplier;
-				}
-			}
-		}
+        // calculate fees base
+        local multiplier:number := 8 * _feesMultiplier;
+        local feesBase:number := (2 * numOfNfts) + multiplier;
+
         return feesBase;
     }
 
@@ -254,7 +217,7 @@ token GHOST {
         local balance:number := Token.getBalance(creator, _feesSymbol);
 
         // calculate required fees
-        local feesRequired:number := this.feesBase(numOfNfts) * assetDecimals;
+        local feesRequired:number := this.feesBase(numOfNfts) * 2 * assetDecimals;
 
         // calculate missing fees
         local feesMissing:number := (feesRequired - balance) / assetDecimals;
@@ -264,7 +227,8 @@ token GHOST {
 	/// @dev Internal method to pay fees based on mint quantity
     /// @param numOfNfts - Quantity of NFT to mint - number
 	/// @param creator - Address trying to mint - address
-    private payFees(numOfNfts:number, creator:address)
+    /// @param infusedAmount - NFT infuse amount - number
+    private payFees(numOfNfts:number, creator:address, infusedAmount:number)
     {
         // calculate asset decimals
 		local assetDecimals:number := 10 ^ Token.getDecimals(_feesSymbol);
@@ -275,8 +239,16 @@ token GHOST {
         // calculate fees infuse
 		local feesInfuse:number := _infuseMultiplier * numOfNfts;
 
-        // calculate fees minus infuse
-        local feesTransfer:number := (feesBaseResult - feesInfuse) * assetDecimals;
+        // calculate fees minus infuse, if any
+        local feesTransfer:number;
+        if (infusedAmount > 0)
+        {
+            feesTransfer := feesBaseResult * assetDecimals;
+        }
+        else
+        {
+            feesTransfer := (feesBaseResult - feesInfuse) * assetDecimals;
+        }
 
         // calculate fees burn
         local feesBurn:number := feesBaseResult * assetDecimals;
@@ -513,6 +485,7 @@ token GHOST {
     /// @param attributeValue3 - Extended properties of the NFT - string
     /// @param mintTicker - Ticker token on which to mint the NFT - string
     /// @param editionId - ID of the NFT series - number
+    /// @param editionMode - Edition Mode the NFT series, 1 for duplicate, 2 for unique - number
     /// @param listPriceCurrency - NFT listing price currency - string
     /// @param listPrice - NFT listing price - number
     /// @param listLastEndDate - NFT listing end date - timestamp
@@ -521,7 +494,7 @@ token GHOST {
     /// @param infusedAsset - NFT infuse asset - string
     /// @param infusedAmount - NFT infuse amount - number
     /// @param hasLocked - Locked content stored in contract - bool
-    private mint(isNewSeries:bool, creator:address, royalties:number, name:string, description:string, type:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, mintTicker:string, editionId:number, listPriceCurrency:string, listPrice:number, listLastEndDate:timestamp, lockedContent:string, numOfNfts:number, infusedAsset:string, infusedAmount:number, hasLocked:bool)
+    private mint(isNewSeries:bool, creator:address, royalties:number, name:string, description:string, type:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, mintTicker:string, editionId:number, editionMode:number, listPriceCurrency:string, listPrice:number, listLastEndDate:timestamp, lockedContent:string, numOfNfts:number, infusedAsset:string, infusedAmount:number, hasLocked:bool)
     {
         // mint numOfNfts NFT
         while (numOfNfts > 0) {
@@ -531,11 +504,11 @@ token GHOST {
             local tokenID:number;
 
             // if new series pass full rom
-            if (isNewSeries)
+            if (isNewSeries == true or editionMode == 2)
             {
                 tokenID := NFT.mint(creator, creator, mintTicker, rom, "", editionId);
             }
-            // if existing series pass empty rom
+            // if existing duplicated series
             else
             {
                 tokenID := NFT.mint(creator, creator, mintTicker, "", "", editionId);
@@ -612,36 +585,6 @@ token GHOST {
 
         // set fees symbol
         _feesSymbol:= feesSymbol;
-    }
-
-    /// @dev Update the current fees thresholds.
-    /// @param feesThresholdIndex - Index of the threshold (1,2 or 3) - number
-    /// @param feesThresholdValue - Value of the specific threshold - number
-    public updateFeesThresholds(feesThresholdIndex:number, feesThresholdValue:number)
-    {
-        // check is witness and is current owner
-        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
-
-        // check feesThresholdIndex parameter
-        Runtime.expect(feesThresholdIndex <= 3, "invalid number for feesThresholdIndex, it should be 1,2 or 3, received " + feesThresholdIndex);
-        Runtime.expect(feesThresholdIndex > 0, "invalid number for feesThresholdIndex, it should be 1,2 or 3, received " + feesThresholdIndex);
-
-        // check feesThresholdValue parameter
-        Runtime.expect(feesThresholdValue > 0, "invalid number for feesThresholdValue, it should be > 0, received " + feesThresholdValue);
-
-        // set fees thresholds
-        if (feesThresholdIndex == 1)
-        {
-            _feesThreshold1:= feesThresholdValue;
-        }
-        if (feesThresholdIndex == 2)
-        {
-            _feesThreshold2:= feesThresholdValue;
-        }
-        if (feesThresholdIndex == 3)
-        {
-            _feesThreshold3:= feesThresholdValue;
-        }
     }
 
 	/// @dev Update the current fees address.
@@ -729,12 +672,12 @@ token GHOST {
         }
 
         // mint tokens
-        this.mint(isNewSeries, creator, royalties, name, description, type, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, listPriceCurrency, listPrice, listLastEndDate, lockedContent, numOfNfts, infusedAsset, infusedAmount, hasLocked);
+        this.mint(isNewSeries, creator, royalties, name, description, type, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, editionMode, listPriceCurrency, listPrice, listLastEndDate, lockedContent, numOfNfts, infusedAsset, infusedAmount, hasLocked);
 
         // if feesMultipler > 0, pay service fees and pay burn fees
         if (_feesMultiplier > 0)
         {
-            this.payFees(numOfNfts, creator);
+            this.payFees(numOfNfts, creator, infusedAmount);
         }
     }
 
