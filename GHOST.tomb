@@ -215,20 +215,20 @@ token GHOST {
     {
 		local feesBase:number;
         // if < threshold 1
-        if (numOfNfts < _feesThreshold1)
+        if (numOfNfts <= _feesThreshold1)
         {
             feesBase := 15 * _feesMultiplier;
         }
 		else {
     		// if < threshold 2
-			if (numOfNfts >= _feesThreshold1 and numOfNfts < _feesThreshold2)
+			if (numOfNfts > _feesThreshold1 and numOfNfts <= _feesThreshold2)
 			{
 				feesBase:= 30 * _feesMultiplier;
 			}
 			else
 			{
       			// if < threshold 3
-				if (numOfNfts >= _feesThreshold2 and numOfNfts < _feesThreshold3)
+				if (numOfNfts > _feesThreshold2 and numOfNfts <= _feesThreshold3)
 				{
 					feesBase := 55 * _feesMultiplier;
 				}
