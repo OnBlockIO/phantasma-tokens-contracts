@@ -491,6 +491,7 @@ token GHOST {
     }
 
     /// @dev Internal method to start a NFT mint.
+    /// @param isNewSeries - Specify if this is a new series or not - bool
     /// @param creator - Original owner of the NFT - address
     /// @param royalties - Commission (in %) for the royalties - number
     /// @param name - Name of the NFT to mint - string
@@ -513,16 +514,25 @@ token GHOST {
     /// @param numOfNfts - Quantity of NFT to mint - number
     /// @param infusedAsset - NFT infuse asset - string
     /// @param infusedAmount - NFT infuse amount - number
-    private mint(creator:address, royalties:number, name:string, description:string, type:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, mintTicker:string, editionId:number, listPriceCurrency:string, listPrice:number, listLastEndDate:timestamp, lockedContent:string, numOfNfts:number, infusedAsset:string, infusedAmount:number)
+    private mint(isNewSeries:bool, creator:address, royalties:number, name:string, description:string, type:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, mintTicker:string, editionId:number, listPriceCurrency:string, listPrice:number, listLastEndDate:timestamp, lockedContent:string, numOfNfts:number, infusedAsset:string, infusedAmount:number)
     {
         // mint numOfNfts NFT
         while (numOfNfts > 0) {
 
             // local var for rom
             local rom:ghostRom := Struct.ghostRom(Time.now(), creator, royalties, type, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3);
+            local tokenID:number;
 
-            // mint NFT
-            local tokenID:number := NFT.mint(creator, creator, mintTicker, rom, "", editionId);
+            // if new series pass full rom
+            if (isNewSeries)
+            {
+                tokenID := NFT.mint(creator, creator, mintTicker, rom, "", editionId);
+            }
+            // if existing series pass empty rom
+            else
+            {
+                tokenID := NFT.mint(creator, creator, mintTicker, "", "", editionId);
+            }
 
             // infuse NFT
             this.infuseToken(creator, mintTicker, tokenID, infusedAsset, infusedAmount);
@@ -691,6 +701,9 @@ token GHOST {
         // validate series
         this.validateSeries(editionId, editionMax, editionMode, creator, mintTicker, numOfNfts);
 
+        // init is new series var
+        local isNewSeries:bool := false;
+
         // check if new series, then validate and create it
         if (editionId == 0)
         {
@@ -702,10 +715,13 @@ token GHOST {
 
             // new series - create series
             this.createSeries(editionId, editionMax, editionMode, creator, mintTicker);
+
+            // set new series to true
+            isNewSeries := true;
         }
 
         // mint tokens
-        this.mint(creator, royalties, name, description, type, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, listPriceCurrency, listPrice, listLastEndDate, lockedContent, numOfNfts, infusedAsset, infusedAmount);
+        this.mint(isNewSeries, creator, royalties, name, description, type, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, listPriceCurrency, listPrice, listLastEndDate, lockedContent, numOfNfts, infusedAsset, infusedAmount);
 
         // if feesMultipler > 0, pay service fees and pay burn fees
         if (_feesMultiplier > 0)
@@ -721,8 +737,8 @@ token GHOST {
     public getLockedContent(nftSymbol: string, nftID:number):string
     {
         // check is witness and is current owner
-        local nftInfo:ghostRom := NFT.readROM<ghostRom>(nftSymbol, nftID);
-		Runtime.expect(Runtime.isWitness(nftInfo.creator), "invalid witness");
+        local nftInfo:NFT := NFT.read(nftSymbol, nftID);
+		Runtime.expect(Runtime.isWitness(nftInfo.owner), "invalid witness");
 
         // return content if available
         if (_lockedStorageMap.has(nftID))
