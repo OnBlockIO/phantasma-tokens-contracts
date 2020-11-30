@@ -7,8 +7,6 @@ struct ghostRom
 {
     // Date the NFT was created - used to have a unique ID - timestamp
     created:timestamp;
-    // Original owner of the NFT - address
-    creator:address;
     // Commission (in %) for the royalties - number
     royalties:number;
     // Type of the NFT - number
@@ -95,10 +93,6 @@ token GHOST {
 
         property created:timestamp {
             return _ROM.created;
-        }
-
-        property creator:address {
-            return _ROM.creator;
         }
 
         property royalties:number {
@@ -500,7 +494,7 @@ token GHOST {
         while (numOfNfts > 0) {
 
             // local var for rom
-            local rom:ghostRom := Struct.ghostRom(Time.now(), creator, royalties, type, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, hasLocked);
+            local rom:ghostRom := Struct.ghostRom(Time.now(), royalties, type, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, hasLocked);
             local tokenID:number;
 
             // if new series pass full rom
