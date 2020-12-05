@@ -292,7 +292,10 @@ token GHOST {
 
         // check numOfNfts parameter
         Runtime.expect(numOfNfts > 0, "invalid number for numOfNfts, it should be > 0, received " + numOfNfts);
-        Runtime.expect(numOfNfts <= editionMax, "invalid number for numOfNfts, it should be < editionMax, received " + numOfNfts);
+        if (editionMax > 0)
+        {
+            Runtime.expect(numOfNfts <= editionMax, "invalid number for numOfNfts, it should be < editionMax, received " + numOfNfts);
+        }
         if (editionMode == 2)
         {
             Runtime.expect(numOfNfts == 1, "invalid number for numOfNfts on unique mode series, it should be 1 max, received " + numOfNfts);
