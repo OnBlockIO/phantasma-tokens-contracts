@@ -156,8 +156,6 @@ token GHOST {
 	import NFT;
     import Time;
     import UID;
-    import Call;
-    import Cryptography;
     import Market;
     import Storage;
     import Bytes;
@@ -433,14 +431,11 @@ token GHOST {
     /// @param tokenID - NFT ID - number
     private lockContent(lockedContent:string, tokenID:number)
     {
-        // encryption key
-        local encryptionKey:string := "d25a4cdb3f1b347efabb56da18069dfe";
-
-        // encrypted content
-        local encryptedContentBytes: bytes := Cryptography.AESEncrypt(lockedContent.toBytes(), encryptionKey.toBytes());
+        // convert locked content to bytes
+        local lockedContentBytes: bytes := lockedContent.toBytes();
 
         // set locked content storage map
-        _lockedStorageMap.set(tokenID, encryptedContentBytes);
+        _lockedStorageMap.set(tokenID, lockedContentBytes);
     }
 
     /// @dev Internal method to create a new NFT series.
@@ -691,20 +686,14 @@ token GHOST {
         // return content if available
         if (_lockedStorageMap.has(nftID))
         {
-            // encryption key
-            local encryptionKey:string := "d25a4cdb3f1b347efabb56da18069dfe";
+            // get locked content
+            local lockedContentBytes:bytes := _lockedStorageMap.get(nftID);
 
-            // encrypted content
-            local encryptedContentBytes:bytes := _lockedStorageMap.get(nftID);
-
-            // decrypted content bytes
-            local decryptedContentBytes:bytes := Cryptography.AESDecrypt(encryptedContentBytes, encryptionKey.toBytes());
-
-            // decrypted content string
-            local decryptedContent:string := decryptedContentBytes.toString();
+            // convert locked content to string
+            local lockedContent:string := lockedContentBytes.toString();
 
             // return string
-            return decryptedContent;
+            return lockedContent;
         }
     }
 
