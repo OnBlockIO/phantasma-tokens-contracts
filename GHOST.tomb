@@ -369,7 +369,7 @@ token GHOST {
         }
 
         // check lockedContent parameter
-        Runtime.expect(lockedContent.length() <= 50, "invalid char length for lockedContent, it should be <= 50, received " + lockedContent.length());
+        Runtime.expect(lockedContent.length() <= 200, "invalid char length for lockedContent, it should be <= 200, received " + lockedContent.length());
 
         // check listPrice & listPriceCurrency parameter
         if (listPrice > 0)
