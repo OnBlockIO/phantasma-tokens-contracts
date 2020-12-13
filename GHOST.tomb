@@ -10,7 +10,7 @@ struct ghostRom
     // Commission (in %) for the royalties - number
     royalties:number;
     // Type of the NFT - number
-    typeNFT:number;
+    nftType:number;
     // Name of the NFT - string
     name:string;
     // Description of the NFT - string
@@ -54,6 +54,8 @@ token GHOST {
     global _contractPaused:bool;
     // global storage for locked content
     global _lockedStorageMap: storage_map<number, bytes>;
+    // global storage for unlocked content
+    global _unlockedStorageMap: storage_map<number, number>;
     // global storage for fees multiplier
     global _feesMultiplier:number;
 	// global storage for fees symbol
@@ -90,6 +92,8 @@ token GHOST {
     nft ghostNft<ghostRom, ghostRam> {
 
         import Token;
+        import Call;
+        import Map;
 
         property created:timestamp {
             return _ROM.created;
@@ -99,8 +103,8 @@ token GHOST {
             return _ROM.royalties;
         }
 
-        property typeNFT:number {
-            return _ROM.typeNFT;
+        property nftType:number {
+            return _ROM.nftType;
         }
 
         property name:string {
@@ -145,6 +149,11 @@ token GHOST {
 
         property hasLocked:bool {
             return _ROM.hasLocked;
+        }
+
+        property unlockCount:number {
+            local count:number := Call.interop<number>("Map.Get",  "GHOST", "_unlockedStorageMap", _tokenID);
+            return count;
         }
 
     }
@@ -314,7 +323,7 @@ token GHOST {
     /// @param royalties - Commission (in %) for the royalties - number
     /// @param name - Name of the NFT to mint - string
     /// @param description - Description of the NFT to mint - string
-    /// @param typeNFT - Type of the NFT - number
+    /// @param nftType - Type of the NFT - number
     /// @param imageURL - Image URL of the NFT - IPFS hash - string
     /// @param infoURL - Token URL of the NFT - External API - string
     /// @param attributeType1 - Extended properties of the NFT - string
@@ -328,7 +337,7 @@ token GHOST {
     /// @param listPriceCurrency - NFT listing price currency - string
     /// @param infusedAsset - NFT infuse asset - string
     /// @param infusedAmount - NFT infuse amount - number
-    private validateMint(royalties:number, name:string, description:string, typeNFT:number, imageURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent: string, listPrice:number, listPriceCurrency:string, infusedAsset:string, infusedAmount:number)
+    private validateMint(royalties:number, name:string, description:string, nftType:number, imageURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent: string, listPrice:number, listPriceCurrency:string, infusedAsset:string, infusedAmount:number)
     {
         // check royalties parameter
         Runtime.expect(royalties >= 0, "invalid number for royalties, it should be between 0 and 50");
@@ -343,7 +352,7 @@ token GHOST {
         Runtime.expect(description.length() <= 200, "invalid char length for description, it should be <= 200, received " + description.length());
 
         // check type parameter
-        Runtime.expect(typeNFT > 0, "invalid number for typeNFT, it should be > 0, received " + typeNFT);
+        Runtime.expect(nftType > 0, "invalid number for nftType, it should be > 0, received " + nftType);
 
         // check imageURL parameter
         Runtime.expect(imageURL.length() > 0, "invalid char length for imageURL, it should be > 0, received " + imageURL.length());
@@ -466,7 +475,7 @@ token GHOST {
     /// @param royalties - Commission (in %) for the royalties - number
     /// @param name - Name of the NFT to mint - string
     /// @param description - Description of the NFT to mint - string
-    /// @param typeNFT - Type of the NFT - number
+    /// @param nftType - Type of the NFT - number
     /// @param imageURL - Image URL of the NFT - IPFS hash - string
     /// @param infoURL - Token URL of the NFT - External API - string
     /// @param attributeType1 - Extended properties of the NFT - string
@@ -486,13 +495,13 @@ token GHOST {
     /// @param infusedAsset - NFT infuse asset - string
     /// @param infusedAmount - NFT infuse amount - number
     /// @param hasLocked - Locked content stored in contract - bool
-    private mint(isNewSeries:bool, creator:address, royalties:number, name:string, description:string, typeNFT:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, mintTicker:string, editionId:number, editionMode:number, listPriceCurrency:string, listPrice:number, listLastEndDate:timestamp, lockedContent:string, numOfNfts:number, infusedAsset:string, infusedAmount:number, hasLocked:bool)
+    private mint(isNewSeries:bool, creator:address, royalties:number, name:string, description:string, nftType:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, mintTicker:string, editionId:number, editionMode:number, listPriceCurrency:string, listPrice:number, listLastEndDate:timestamp, lockedContent:string, numOfNfts:number, infusedAsset:string, infusedAmount:number, hasLocked:bool)
     {
         // mint numOfNfts NFT
         while (numOfNfts > 0) {
 
             // local var for rom
-            local rom:ghostRom := Struct.ghostRom(Time.now(), royalties, typeNFT, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, hasLocked);
+            local rom:ghostRom := Struct.ghostRom(Time.now(), royalties, nftType, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, hasLocked);
             local tokenID:number;
 
             // if new series pass full rom
@@ -522,6 +531,9 @@ token GHOST {
                 this.lockContent(lockedContent, tokenID);
 
             }
+
+            // initialize unlock storage map
+            _unlockedStorageMap.set(tokenID, 0);
 
             // loop number change
             numOfNfts := numOfNfts - 1;
@@ -614,7 +626,7 @@ token GHOST {
     /// @param numOfNfts - Quantity of NFT to mint - number
     /// @param name - Name of the NFT to mint - string
     /// @param description - Description of the NFT to mint - string
-    /// @param typeNFT - Type of the NFT - number
+    /// @param nftType - Type of the NFT - number
     /// @param imageURL - Image URL of the NFT - IPFS hash - string
     /// @param infoURL - Token URL of the NFT - External API - string
     /// @param attributeType1 - Extended properties of the NFT - string
@@ -630,7 +642,7 @@ token GHOST {
     /// @param infusedAsset - NFT infuse asset - string
     /// @param infusedAmount - NFT infuse amount - number
     /// @param hasLocked - Locked content stored in contract - bool
-    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, royalties:number, mintTicker:string, numOfNfts:number, name:string, description:string, typeNFT:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent:string, listPrice:number, listPriceCurrency:string, listLastEndDate:timestamp, infusedAsset:string, infusedAmount:number, hasLocked:bool)
+    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, royalties:number, mintTicker:string, numOfNfts:number, name:string, description:string, nftType:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent:string, listPrice:number, listPriceCurrency:string, listLastEndDate:timestamp, infusedAsset:string, infusedAmount:number, hasLocked:bool)
     {
         // check if contract is active
         Runtime.expect(this.checkContractPaused() != true, "GhostMarket smart contract is currently paused");
@@ -651,7 +663,7 @@ token GHOST {
         if (editionId == 0)
         {
             // validate mint tokens if new series
-            this.validateMint(royalties, name, description, typeNFT, imageURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, lockedContent, listPrice, listPriceCurrency, infusedAsset, infusedAmount);
+            this.validateMint(royalties, name, description, nftType, imageURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, lockedContent, listPrice, listPriceCurrency, infusedAsset, infusedAmount);
 
             // new series - create series ID
             editionId := UID.generate();
@@ -664,7 +676,7 @@ token GHOST {
         }
 
         // mint tokens
-        this.mint(isNewSeries, creator, royalties, name, description, typeNFT, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, editionMode, listPriceCurrency, listPrice, listLastEndDate, lockedContent, numOfNfts, infusedAsset, infusedAmount, hasLocked);
+        this.mint(isNewSeries, creator, royalties, name, description, nftType, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, editionMode, listPriceCurrency, listPrice, listLastEndDate, lockedContent, numOfNfts, infusedAsset, infusedAmount, hasLocked);
 
         // if feesMultipler > 0, pay service fees and pay burn fees
         if (_feesMultiplier > 0)
@@ -691,6 +703,10 @@ token GHOST {
 
             // convert locked content to string
             local lockedContent:string := lockedContentBytes.toString();
+
+            // increment unlocked storage map
+            local currentCount:number := _unlockedStorageMap.get(nftID);
+            _unlockedStorageMap.set(nftID, currentCount + 1);
 
             // return string
             return lockedContent;
