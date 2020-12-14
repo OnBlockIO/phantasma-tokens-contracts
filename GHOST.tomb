@@ -675,6 +675,12 @@ token GHOST {
             isNewSeries := true;
         }
 
+        // validate special ghostmarket series only minted from owner
+        if (nftType == 20)
+        {
+            Runtime.expect(Runtime.isWitness(_addressOwner), "GhostMarket special series can only be minted from contract owner address");
+        }
+
         // mint tokens
         this.mint(isNewSeries, creator, royalties, name, description, nftType, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, editionMode, listPriceCurrency, listPrice, listLastEndDate, lockedContent, numOfNfts, infusedAsset, infusedAmount, hasLocked);
 
@@ -704,9 +710,18 @@ token GHOST {
             // convert locked content to string
             local lockedContent:string := lockedContentBytes.toString();
 
-            // increment unlocked storage map
-            local currentCount:number := _unlockedStorageMap.get(nftID);
-            _unlockedStorageMap.set(nftID, currentCount + 1);
+            // burn nft if it is a one time use nft
+            local nftROM:ghostRom := NFT.readROM<ghostRom>(nftSymbol, nftID);
+            if (nftROM.nftType == 666)
+            {
+                Token.burn(nftInfo.owner, nftSymbol, nftID);
+            }
+            else
+            {
+                // increment unlocked storage map
+                local currentCount:number := _unlockedStorageMap.get(nftID);
+                _unlockedStorageMap.set(nftID, currentCount + 1);
+            }
 
             // return string
             return lockedContent;
