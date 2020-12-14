@@ -81,8 +81,6 @@ token GHOST {
     property addressOwner:address = _addressOwner;
     // token fees multiplier
     property feesMultiplier:number = _feesMultiplier;
-	// token fees symbol
-    property feesSymbol:string = _feesSymbol;
 	// token fees address
     property feesAddress:address = _feesAddress;
     // token infuse multiplier
@@ -339,6 +337,12 @@ token GHOST {
     /// @param infusedAmount - NFT infuse amount - number
     private validateMint(royalties:number, name:string, description:string, nftType:number, imageURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent: string, listPrice:number, listPriceCurrency:string, infusedAsset:string, infusedAmount:number)
     {
+        // validate special ghostmarket series only minted from owner
+        if (nftType == 20)
+        {
+            Runtime.expect(Runtime.isWitness(_addressOwner), "GhostMarket special series can only be minted from contract owner address");
+        }
+
         // check royalties parameter
         Runtime.expect(royalties >= 0, "invalid number for royalties, it should be between 0 and 50");
         Runtime.expect(royalties <= 50, "invalid number for royalties, it should be between 0 and 50");
@@ -576,21 +580,6 @@ token GHOST {
         _feesMultiplier:= feesMultiplier;
     }
 
-	/// @dev Update the current asset used for fees.
-    /// @param feesSymbol - Asset to use to pay fees - string
-    public updateFeesSymbol(feesSymbol:string)
-    {
-        // check is witness and is current owner
-        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
-
-        // check feesSymbol parameter
-        Runtime.expect(Token.exists(feesSymbol), "invalid token for feesSymbol, received " + feesSymbol);
-        Runtime.expect(this.isNFT(feesSymbol) == false, "invalid fungible flag for " + feesSymbol);
-
-        // set fees symbol
-        _feesSymbol:= feesSymbol;
-    }
-
 	/// @dev Update the current fees address.
     /// @param feesAddress - address used to collect fees - address
     public updateFeesAddress(feesAddress:address)
@@ -673,12 +662,6 @@ token GHOST {
 
             // set new series to true
             isNewSeries := true;
-        }
-
-        // validate special ghostmarket series only minted from owner
-        if (nftType == 20)
-        {
-            Runtime.expect(Runtime.isWitness(_addressOwner), "GhostMarket special series can only be minted from contract owner address");
         }
 
         // mint tokens
