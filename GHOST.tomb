@@ -150,7 +150,7 @@ token GHOST {
         }
 
         property unlockCount:number {
-            local count:number := Call.interop<number>("Map.Get",  "GHOST", "_unlockedStorageMap", _tokenID);
+            local count:number := Call.interop<number>("Map.Get",  "GHOST", "_unlockedStorageMap", _tokenID, $TYPE_OF(number));
             return count;
         }
 
