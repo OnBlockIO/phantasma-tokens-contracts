@@ -697,7 +697,7 @@ token GHOST {
             local nftROM:ghostRom := NFT.readROM<ghostRom>(nftSymbol, nftID);
             if (nftROM.nftType == 666)
             {
-                Token.burn(nftInfo.owner, nftSymbol, nftID);
+                NFT.burn(nftInfo.owner, nftSymbol, nftID);
             }
             else
             {
