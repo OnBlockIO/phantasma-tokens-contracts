@@ -353,7 +353,7 @@ token GHOST {
 
         // check description parameter
         Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
-        Runtime.expect(description.length() <= 200, "invalid char length for description, it should be <= 200, received " + description.length());
+        Runtime.expect(description.length() <= 500, "invalid char length for description, it should be <= 500, received " + description.length());
 
         // check type parameter
         Runtime.expect(nftType > 0, "invalid number for nftType, it should be > 0, received " + nftType);
