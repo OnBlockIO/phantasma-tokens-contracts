@@ -443,7 +443,6 @@ token GHOST {
     {
         // sell token based on user choice
         Call.contract<none>("Market", "ListToken", creator, mintTicker, listPriceCurrency, tokenID, listPrice, 0, Time.now(), listLastEndDate, 0, 0, _feesListing, _feesAddress);
-        //Call.interop<number>("Map.Get",  "GHOST", "_unlockedStorageMap", _tokenID, $TYPE_OF(number));
     }
 
     /// @dev Internal method to set the locked content storage map.
