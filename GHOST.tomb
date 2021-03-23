@@ -170,6 +170,7 @@ token GHOST {
     import Market;
     import Storage;
     import Bytes;
+    import Call;
 
     // constructor with owner and all global var
     constructor(owner:address)
@@ -441,8 +442,8 @@ token GHOST {
     private sellToken(creator:address, mintTicker:string, listPriceCurrency:string, tokenID:number, listPrice:number, listLastEndDate:timestamp)
     {
         // sell token based on user choice
-        Market.sell(creator, mintTicker, listPriceCurrency, tokenID, listPrice, listLastEndDate);
-        // Market.listToken(creator, mintTicker, listPriceCurrency, tokenID, listPrice, 0, 0, listLastEndDate, 10, 0, _feesListing, _feesAddress);
+        Call.contract<none>("Market", "ListToken", creator, mintTicker, listPriceCurrency, tokenID, listPrice, 0, Time.now(), listLastEndDate, 0, 0, _feesListing, _feesAddress);
+        //Call.interop<number>("Map.Get",  "GHOST", "_unlockedStorageMap", _tokenID, $TYPE_OF(number));
     }
 
     /// @dev Internal method to set the locked content storage map.
