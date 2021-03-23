@@ -58,6 +58,8 @@ token GHOST {
     global _unlockedStorageMap: storage_map<number, number>;
     // global storage for fees multiplier
     global _feesMultiplier:number;
+    // global storage for fees listing
+    global _feesListing:number;
 	// global storage for fees symbol
     global _feesSymbol:string;
 	// global storage for fees address
@@ -68,7 +70,7 @@ token GHOST {
     // token name
     property name:string = _contractName;
     // token version
-    property version:string = "1.0";
+    property version:string = "2.0";
     // token is transferable
     property isTransferable:bool = true;
     // token is not fungible
@@ -81,6 +83,8 @@ token GHOST {
     property addressOwner:address = _addressOwner;
     // token fees multiplier
     property feesMultiplier:number = _feesMultiplier;
+    // token fees listing
+    property feesListing:number = _feesListing;
 	// token fees address
     property feesAddress:address = _feesAddress;
     // token infuse multiplier
@@ -175,6 +179,7 @@ token GHOST {
         _contractName:= "GhostMarket NFT";
 		_contractPaused:= false;
 		_feesMultiplier:= 1;
+        _feesListing:= 2;
 		_feesSymbol:= "KCAL";
 		_feesAddress:= @P2KLzxq8cUi47URLZZYcLs54WPVYnknrHWVryUUUqhuhq5K; // ghostmarket
         _infuseMultiplier:= 1;
@@ -353,7 +358,7 @@ token GHOST {
 
         // check description parameter
         Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
-        Runtime.expect(description.length() <= 500, "invalid char length for description, it should be <= 500, received " + description.length());
+        Runtime.expect(description.length() <= 1000, "invalid char length for description, it should be <= 1000, received " + description.length());
 
         // check type parameter
         Runtime.expect(nftType > 0, "invalid number for nftType, it should be > 0, received " + nftType);
@@ -382,7 +387,7 @@ token GHOST {
         }
 
         // check lockedContent parameter
-        Runtime.expect(lockedContent.length() <= 200, "invalid char length for lockedContent, it should be <= 200, received " + lockedContent.length());
+        Runtime.expect(lockedContent.length() <= 1000, "invalid char length for encrypted lockedContent, it should be <= 1000, received " + lockedContent.length());
 
         // check listPrice & listPriceCurrency parameter
         if (listPrice > 0)
@@ -437,6 +442,7 @@ token GHOST {
     {
         // sell token based on user choice
         Market.sell(creator, mintTicker, listPriceCurrency, tokenID, listPrice, listLastEndDate);
+        // Market.listToken(creator, mintTicker, listPriceCurrency, tokenID, listPrice, 0, 0, listLastEndDate, 10, 0, _feesListing, _feesAddress);
     }
 
     /// @dev Internal method to set the locked content storage map.
@@ -589,6 +595,17 @@ token GHOST {
 
         // set fees address
         _feesAddress:= feesAddress;
+    }
+
+    /// @dev Update the current listing fees.
+    /// @param feesListing - Number in % for the listing fees - number
+    public updateFeesListing(feesListing:number)
+    {
+        // check is witness and is current owner
+        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
+
+        // set fees address
+        _feesListing:= feesListing;
     }
 
     /// @dev Update the infuse multiplier.
