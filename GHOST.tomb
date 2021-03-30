@@ -370,21 +370,21 @@ token GHOST {
         // check extended parameters
         if (attributeType1.length() > 0)
         {
-            Runtime.expect(attributeType1.length() <= 15, "invalid extended attributeType1 length, received " + attributeType1.length());
+            Runtime.expect(attributeType1.length() <= 25, "invalid extended attributeType1 length, received " + attributeType1.length());
             Runtime.expect(attributeValue1.length() > 0, "invalid extended attributeValue1 length, received " + attributeValue1.length());
-            Runtime.expect(attributeValue1.length() <= 15, "invalid extended attributeValue1 length, received " + attributeValue1.length());
+            Runtime.expect(attributeValue1.length() <= 25, "invalid extended attributeValue1 length, received " + attributeValue1.length());
         }
         if (attributeType2.length() > 0)
         {
-            Runtime.expect(attributeType2.length() <= 15, "invalid extended attributeType2 length, received " + attributeType2.length());
+            Runtime.expect(attributeType2.length() <= 25, "invalid extended attributeType2 length, received " + attributeType2.length());
             Runtime.expect(attributeValue2.length() > 0, "invalid extended attributeType2 length, received " + attributeValue2.length());
-            Runtime.expect(attributeValue2.length() <= 15, "invalid extended attributeValue2 length, received " + attributeValue2.length());
+            Runtime.expect(attributeValue2.length() <= 25, "invalid extended attributeValue2 length, received " + attributeValue2.length());
         }
         if (attributeType3.length() > 0)
         {
-            Runtime.expect(attributeType3.length() <= 15, "invalid extended attributeType3 length, received " + attributeType3.length());
+            Runtime.expect(attributeType3.length() <= 25, "invalid extended attributeType3 length, received " + attributeType3.length());
             Runtime.expect(attributeValue3.length() > 0, "invalid extended attributeValue3 length, received " + attributeValue3.length());
-            Runtime.expect(attributeValue3.length() <= 15, "invalid extended attributeValue3 length, received " + attributeValue3.length());
+            Runtime.expect(attributeValue3.length() <= 25, "invalid extended attributeValue3 length, received " + attributeValue3.length());
         }
 
         // check lockedContent parameter
