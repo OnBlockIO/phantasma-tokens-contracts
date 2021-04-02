@@ -161,7 +161,7 @@ token SEMK {
     /// @param imageURL - Image URL of the NFT - IPFS hash - string
     /// @param infoURL - Token URL of the NFT - External API - string
     /// @param lockedContent - NFT locked content hash - string
-    private validateMint(name:string, description:string, nftType:number, imageURL:string, lockedContent: string)
+    private validateMint(name:string, description:string, imageURL:string, lockedContent: string)
     {
         // check name parameter
         Runtime.expect(name.length() >= 3, "invalid char length for name, it should be >= 3, received " + name.length());
