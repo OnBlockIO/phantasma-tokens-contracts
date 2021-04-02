@@ -355,7 +355,7 @@ token GHOST {
 
         // check name parameter
         Runtime.expect(name.length() >= 3, "invalid char length for name, it should be >= 3, received " + name.length());
-        Runtime.expect(name.length() <= 30, "invalid char length for name, it should be <= 30, received " + name.length());
+        Runtime.expect(name.length() <= 35, "invalid char length for name, it should be <= 35, received " + name.length());
 
         // check description parameter
         Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
