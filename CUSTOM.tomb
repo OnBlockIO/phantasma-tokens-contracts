@@ -42,7 +42,7 @@ struct customRam
 }
 
 // custom token contract
-token CUSTOM {
+token CUST {
 
     // global storage for owner address
     global _addressOwner:address;
@@ -55,8 +55,6 @@ token CUSTOM {
 
     // token name
     property name:string = "CUSTOM CONTRACT";
-    // token version
-    property version:string = "1.0";
     // token is transferable
     property isTransferable:bool = true;
     // token is not fungible
@@ -220,7 +218,7 @@ token CUSTOM {
         local feesBurn:number := feesBaseResult * assetDecimals;
 
         // fees payment
-        local feesAddress:number := Call.interop<number>("Get",  "GHOST", "_feesAddress", $TYPE_OF(number));
+        local feesAddress:address := Call.interop<number>("Get",  "GHOST", "_feesAddress", $TYPE_OF(address));
         Token.transfer(creator, feesAddress, "KCAL", feesTransfer);
 
         // fees burn
@@ -429,12 +427,12 @@ token CUSTOM {
         if (editionMode == 2)
         {
             // create series unique
-            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, ghostNft);
+            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Unique, customNft);
         }
         else
         {
             // create series duplicated
-            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, ghostNft);
+            NFT.createSeries(creator, mintTicker, editionId, editionMax, TokenSeries.Duplicated, customNft);
         }
 
     }
