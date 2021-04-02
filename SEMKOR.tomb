@@ -192,7 +192,7 @@ token SEMK {
 		local assetDecimals:number := 10 ^ Token.getDecimals("KCAL");
 
         // calculate fees 
-        local feesTransfer := this.feesBase(numOfNfts) * assetDecimals;
+        local feesTransfer:number := this.feesBase(numOfNfts) * assetDecimals;
 
         // fees payment
         local feesAddress:address := Call.interop<number>("Get",  "GHOST", "_feesAddress", $TYPE_OF(address));
