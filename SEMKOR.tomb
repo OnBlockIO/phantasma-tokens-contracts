@@ -7,6 +7,10 @@ struct customRom
 {
     // Date the NFT was created - used to have a unique ID - timestamp
     created:timestamp;
+    // Commission (in %) for the royalties - number
+    royalties:number;
+    // Type of the NFT - number
+    nftType:number;
     // Name of the NFT - string
     name:string;
     // Description of the NFT - string
@@ -15,6 +19,18 @@ struct customRom
     imageURL:string;
     // Info URL of the NFT for extended properties - string
     infoURL:string;
+    // Extended attribute1 type - string
+    attrT1:string;
+    // Extended attribute1 value - string
+    attrV1:string;
+    // Extended attribute2 type - string
+    attrT2:string;
+    // Extended attribute2 value - string
+    attrV2:string;
+    // Extended attribute3 type - string
+    attrT3:string;
+    // Extended attribute3 value - string
+    attrV3:string;
     // Locked content stored in contract - bool
     hasLocked:bool;
 }
@@ -25,7 +41,7 @@ struct customRam
 
 }
 
-// ghost token contract
+// custom token contract
 token SEMK {
 
     // global storage for owner address
@@ -36,7 +52,7 @@ token SEMK {
     global _unlockedStorageMap: storage_map<number, number>;
 
     // token name
-    property name:string = "SEMKOR CONTRACT";
+    property name:string = "SEMKHOR";
     // token is transferable
     property isTransferable:bool = true;
     // token is not fungible
@@ -59,6 +75,14 @@ token SEMK {
             return _ROM.created;
         }
 
+        property royalties:number {
+            return _ROM.royalties;
+        }
+
+        property nftType:number {
+            return _ROM.nftType;
+        }
+
         property name:string {
             return _ROM.name;
         }
@@ -75,12 +99,36 @@ token SEMK {
             return _ROM.infoURL;
         }
 
+        property attrT1:string {
+            return _ROM.attrT1;
+        }
+
+        property attrV1:string {
+            return _ROM.attrV1;
+        }
+
+        property attrT2:string {
+            return _ROM.attrT2;
+        }
+
+        property attrV2:string {
+            return _ROM.attrV2;
+        }
+
+        property attrT3:string {
+            return _ROM.attrT3;
+        }
+
+        property attrV3:string {
+            return _ROM.attrV3;
+        }
+
         property hasLocked:bool {
             return _ROM.hasLocked;
         }
 
         property unlockCount:number {
-            local count:number := Call.interop<number>("Map.Get",  "SEMK", "_unlockedStorageMap", _tokenID, $TYPE_OF(number));
+            local count:number := Call.interop<number>("Map.Get",  $THIS_SYMBOL, "_unlockedStorageMap", _tokenID, $TYPE_OF(number));
             return count;
         }
 
@@ -101,6 +149,54 @@ token SEMK {
     constructor(owner:address)
     {
         _addressOwner:= owner;
+    }
+
+    /// @dev Internal method to return base fees based on mint quantity
+    /// @param numOfNfts - Quantity of NFT to mint - number
+    /// @dev Returns number.
+    private feesBase(numOfNfts:number):number
+    {
+        // calculate fees base
+        local feesMultiplier:number := Call.interop<number>("Get",  "GHOST", "_feesMultiplier", $TYPE_OF(number));
+        local multiplier:number := 2 * feesMultiplier;
+        local feesBase:number := (2 * numOfNfts) + multiplier;
+
+        return feesBase;
+    }
+
+	/// @dev Internal method to check if enough fees based on mint quantity
+    /// @param numOfNfts - Quantity of NFT to mint - number
+	/// @param creator - Address trying to mint - address
+    private checkFees(numOfNfts:number, creator:address)
+    {
+        // calculate asset decimals
+        local assetDecimals:number := 10 ^ Token.getDecimals("KCAL");
+
+        // current balance
+        local balance:number := Token.getBalance(creator, "KCAL");
+
+        // calculate required fees
+        local feesRequired:number := this.feesBase(numOfNfts) * assetDecimals;
+
+        // calculate missing fees
+        local feesMissing:number := (feesRequired - balance) / assetDecimals;
+		Runtime.expect(feesMissing < 0, "not enough fees to pay for this mint transaction, requires " + feesMissing + " more KCAL");
+    }
+
+	/// @dev Internal method to pay fees based on mint quantity
+    /// @param numOfNfts - Quantity of NFT to mint - number
+	/// @param creator - Address trying to mint - address
+    private payFees(numOfNfts:number, creator:address)
+    {
+        // calculate asset decimals
+		local assetDecimals:number := 10 ^ Token.getDecimals("KCAL");
+
+        // calculate fees 
+        local feesTransfer := this.feesBase(numOfNfts) * assetDecimals;
+
+        // fees payment
+        local feesAddress:address := Call.interop<number>("Get",  "GHOST", "_feesAddress", $TYPE_OF(address));
+        Token.transfer(creator, feesAddress, "KCAL", feesTransfer);
     }
 
     /// @dev Internal method to check if a token is a NFT
@@ -150,19 +246,38 @@ token SEMK {
             Runtime.expect(numOfNfts == 1, "invalid number for numOfNfts on unique mode series, it should be 1 max, received " + numOfNfts);
         }
 
+        // if fees multiplier > 0, check if enough for transfer fees
+        local feesMultiplier:number := Call.interop<number>("Get",  "GHOST", "_feesMultiplier", $TYPE_OF(number));
+        if (feesMultiplier > 0)
+        {
+            this.checkFees(numOfNfts, creator);
+        }
+
         // check mintTicker parameter
         Runtime.expect(Token.exists(mintTicker), "invalid token for mintTicker, received " + mintTicker);
         Runtime.expect(this.isNFT(mintTicker), "invalid fungible flag for " + mintTicker);
     }
 
     /// @dev Internal method to validate a NFT mint.
+    /// @param royalties - Commission (in %) for the royalties - number
     /// @param name - Name of the NFT to mint - string
     /// @param description - Description of the NFT to mint - string
+    /// @param nftType - Type of the NFT - number
     /// @param imageURL - Image URL of the NFT - IPFS hash - string
     /// @param infoURL - Token URL of the NFT - External API - string
+    /// @param attributeType1 - Extended properties of the NFT - string
+    /// @param attributeValue1 - Extended properties of the NFT - string
+    /// @param attributeType2 - Extended properties of the NFT - string
+    /// @param attributeValue2 - Extended properties of the NFT - string
+    /// @param attributeType3 - Extended properties of the NFT - string
+    /// @param attributeValue3 - Extended properties of the NFT - string
     /// @param lockedContent - NFT locked content hash - string
-    private validateMint(name:string, description:string, imageURL:string, lockedContent: string)
+    private validateMint(royalties:number, name:string, description:string, nftType:number, imageURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent: string)
     {
+        // check royalties parameter
+        Runtime.expect(royalties >= 0, "invalid number for royalties, it should be between 0 and 50");
+        Runtime.expect(royalties <= 50, "invalid number for royalties, it should be between 0 and 50");
+
         // check name parameter
         Runtime.expect(name.length() >= 3, "invalid char length for name, it should be >= 3, received " + name.length());
         Runtime.expect(name.length() <= 35, "invalid char length for name, it should be <= 35, received " + name.length());
@@ -171,8 +286,31 @@ token SEMK {
         Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
         Runtime.expect(description.length() <= 1000, "invalid char length for description, it should be <= 1000, received " + description.length());
 
+        // check type parameter
+        Runtime.expect(nftType > 0, "invalid number for nftType, it should be > 0, received " + nftType);
+
         // check imageURL parameter
         Runtime.expect(imageURL.length() > 0, "invalid char length for imageURL, it should be > 0, received " + imageURL.length());
+
+        // check extended parameters
+        if (attributeType1.length() > 0)
+        {
+            Runtime.expect(attributeType1.length() <= 25, "invalid extended attributeType1 length, received " + attributeType1.length());
+            Runtime.expect(attributeValue1.length() > 0, "invalid extended attributeValue1 length, received " + attributeValue1.length());
+            Runtime.expect(attributeValue1.length() <= 25, "invalid extended attributeValue1 length, received " + attributeValue1.length());
+        }
+        if (attributeType2.length() > 0)
+        {
+            Runtime.expect(attributeType2.length() <= 25, "invalid extended attributeType2 length, received " + attributeType2.length());
+            Runtime.expect(attributeValue2.length() > 0, "invalid extended attributeType2 length, received " + attributeValue2.length());
+            Runtime.expect(attributeValue2.length() <= 25, "invalid extended attributeValue2 length, received " + attributeValue2.length());
+        }
+        if (attributeType3.length() > 0)
+        {
+            Runtime.expect(attributeType3.length() <= 25, "invalid extended attributeType3 length, received " + attributeType3.length());
+            Runtime.expect(attributeValue3.length() > 0, "invalid extended attributeValue3 length, received " + attributeValue3.length());
+            Runtime.expect(attributeValue3.length() <= 25, "invalid extended attributeValue3 length, received " + attributeValue3.length());
+        }
 
         // check lockedContent parameter
         Runtime.expect(lockedContent.length() <= 1000, "invalid char length for encrypted lockedContent, it should be <= 1000, received " + lockedContent.length());
@@ -215,23 +353,31 @@ token SEMK {
     /// @dev Internal method to start a NFT mint.
     /// @param isNewSeries - Specify if this is a new series or not - bool
     /// @param creator - Original owner of the NFT - address
+    /// @param royalties - Commission (in %) for the royalties - number
     /// @param name - Name of the NFT to mint - string
     /// @param description - Description of the NFT to mint - string
+    /// @param nftType - Type of the NFT - number
     /// @param imageURL - Image URL of the NFT - IPFS hash - string
     /// @param infoURL - Token URL of the NFT - External API - string
+    /// @param attributeType1 - Extended properties of the NFT - string
+    /// @param attributeValue1 - Extended properties of the NFT - string
+    /// @param attributeType2 - Extended properties of the NFT - string
+    /// @param attributeValue2 - Extended properties of the NFT - string
+    /// @param attributeType3 - Extended properties of the NFT - string
+    /// @param attributeValue3 - Extended properties of the NFT - string
     /// @param mintTicker - Ticker token on which to mint the NFT - string
     /// @param editionId - ID of the NFT series - number
     /// @param editionMode - Edition Mode the NFT series, 1 for duplicate, 2 for unique - number
     /// @param lockedContent - NFT locked content hash - string
     /// @param numOfNfts - Quantity of NFT to mint - number
     /// @param hasLocked - Locked content stored in contract - bool
-    private mint(isNewSeries:bool, creator:address, name:string, description:string, imageURL:string, infoURL:string, mintTicker:string, editionId:number, editionMode:number, lockedContent:string, numOfNfts:number, hasLocked:bool)
+    private mint(isNewSeries:bool, creator:address, royalties:number, name:string, description:string, nftType:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, mintTicker:string, editionId:number, editionMode:number, lockedContent:string, numOfNfts:number, hasLocked:bool)
     {
         // mint numOfNfts NFT
         while (numOfNfts > 0) {
 
             // local var for rom
-            local rom:customRom := Struct.customRom(Time.now(), name, description, imageURL, infoURL, hasLocked);
+            local rom:customRom := Struct.customRom(Time.now(), royalties, nftType, name, description, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, hasLocked);
             local tokenID:number;
 
             // if new series pass full rom
@@ -277,18 +423,26 @@ token SEMK {
     /// @param editionMax - Edition Max the NFT series - number
     /// @param editionMode - Edition Mode the NFT series, 1 for duplicate, 2 for unique - number
     /// @param creator - Original owner of the NFT - address
+    /// @param royalties - Commission (in %) for the royalties - number
     /// @param mintTicker - Ticker token on which to mint the NFT - string
     /// @param numOfNfts - Quantity of NFT to mint - number
     /// @param name - Name of the NFT to mint - string
     /// @param description - Description of the NFT to mint - string
+    /// @param nftType - Type of the NFT - number
     /// @param imageURL - Image URL of the NFT - IPFS hash - string
     /// @param infoURL - Token URL of the NFT - External API - string
+    /// @param attributeType1 - Extended properties of the NFT - string
+    /// @param attributeValue1 - Extended properties of the NFT - string
+    /// @param attributeType2 - Extended properties of the NFT - string
+    /// @param attributeValue2 - Extended properties of the NFT - string
+    /// @param attributeType3 - Extended properties of the NFT - string
+    /// @param attributeValue3 - Extended properties of the NFT - string
     /// @param lockedContent - NFT locked content hash - string
     /// @param hasLocked - Locked content stored in contract - bool
-    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, mintTicker:string, numOfNfts:number, name:string, description:string, imageURL:string, infoURL:string, lockedContent:string, hasLocked:bool)
+    public mintToken(editionId:number, editionMax:number, editionMode:number, creator:address, royalties:number, mintTicker:string, numOfNfts:number, name:string, description:string, nftType:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, lockedContent:string, hasLocked:bool)
     {
-        // check is witness
-        Runtime.expect(Runtime.isWitness(creator), "invalid witness");
+        // check is witness and is current owner
+        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
 
         // validate series
         this.validateSeries(editionId, editionMax, editionMode, creator, mintTicker, numOfNfts);
@@ -300,7 +454,7 @@ token SEMK {
         if (editionId == 0)
         {
             // validate mint tokens if new series
-            this.validateMint(name, description, imageURL, lockedContent);
+            this.validateMint(royalties, name, description, nftType, imageURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, lockedContent);
 
             // new series - create series ID
             editionId := UID.generate();
@@ -313,7 +467,14 @@ token SEMK {
         }
 
         // mint tokens
-        this.mint(isNewSeries, creator, name, description, imageURL, infoURL, mintTicker, editionId, editionMode, lockedContent, numOfNfts, hasLocked);
+        this.mint(isNewSeries, creator, royalties, name, description, nftType, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, editionMode, lockedContent, numOfNfts, hasLocked);
+
+        // if feesMultipler > 0, pay service fees
+        local feesMultiplier:number := Call.interop<number>("Get",  "GHOST", "_feesMultiplier", $TYPE_OF(number));
+        if (feesMultiplier > 0)
+        {
+            this.payFees(numOfNfts, creator);
+        }
     }
 
     /// @dev Get locked content of a specific pair symbol/nftid.
@@ -350,25 +511,6 @@ token SEMK {
     {
         // check is witness and is current owner
 		Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
-    }
-
-    /// @dev onMint trigger.
-    /// @param from - Address from - address
-    /// @param from - Address to - address
-    /// @param from - Symbol - string
-    /// @param from - Amount - number
-    trigger onMint(from:address, to:address, symbol:string, amount:number)
-    {
-        // enforce mint only from contract
-        Runtime.expect(1 == 1, "temporary until Runtime.context() is fixed");
-    }
-
-    /// @dev onSeries trigger.
-    /// @param from - Address from - address
-    trigger onSeries(from: address)
-    {
-        // enforce create series only from contract
-        Runtime.expect(1 == 1, "temporary until Runtime.context() is fixed");
     }
 
 }
