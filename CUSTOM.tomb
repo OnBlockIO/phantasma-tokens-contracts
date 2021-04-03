@@ -158,7 +158,7 @@ token CUST {
     private feesBase(numOfNfts:number):number
     {
         // calculate fees base
-        local feesMultiplier:number := Call.interop<number>("Get",  "GHOST", "_feesMultiplier", $TYPE_OF(number));
+        local feesMultiplier:number := Call.contract<number>("GHOST", "getFeesMultiplier", $TYPE_OF(address));
         local multiplier:number := 8 * feesMultiplier;
         local feesBase:number := (2 * numOfNfts) + multiplier;
 
@@ -197,7 +197,7 @@ token CUST {
 		local feesBaseResult:number := this.feesBase(numOfNfts);
 
         // calculate fees infuse
-        local infuseMultiplier:number := Call.interop<number>("Get",  "GHOST", "_infuseMultiplier", $TYPE_OF(number));
+        local infuseMultiplier:number := Call.contract<number>("GHOST", "getInfuseMultiplier", $TYPE_OF(address));
 		local feesInfuse:number := infuseMultiplier * numOfNfts;
 
         // calculate fees minus infuse, if any
@@ -215,7 +215,7 @@ token CUST {
         local feesBurn:number := feesBaseResult * assetDecimals;
 
         // fees payment
-        local feesAddress:address := Call.interop<number>("Get",  "GHOST", "_feesAddress", $TYPE_OF(address));
+        local feesAddress:address := Call.contract<number>("GHOST", "getFeesAddress", $TYPE_OF(address));
         Token.transfer(creator, feesAddress, "KCAL", feesTransfer);
 
         // fees burn
@@ -270,7 +270,7 @@ token CUST {
         }
 
         // if fees multiplier > 0, check if enough for transfer fees and burn fees
-        local feesMultiplier:number := Call.interop<number>("Get",  "GHOST", "_feesMultiplier", $TYPE_OF(number));
+        local feesMultiplier:number := Call.contract<number>("GHOST", "getFeesMultiplier", $TYPE_OF(address));
         if (feesMultiplier > 0)
         {
             this.checkFees(numOfNfts, creator);
@@ -365,7 +365,7 @@ token CUST {
     private infuseToken(creator:address, mintTicker:string, tokenID:number, infusedAsset:string, infusedAmount:number)
     {
         // infuse min value if user does not want to infuse
-        local infuseMultiplier:number := Call.interop<number>("Get",  "GHOST", "_infuseMultiplier", $TYPE_OF(number));
+        local infuseMultiplier:number := Call.contract<number>("GHOST", "getInfuseMultiplier", $TYPE_OF(address));
         if (infuseMultiplier > 0 and infusedAmount == 0)
         {
             // local var for infuseAmountDefault
@@ -395,8 +395,8 @@ token CUST {
     private sellToken(creator:address, mintTicker:string, listPriceCurrency:string, tokenID:number, listPrice:number, listLastEndDate:timestamp)
     {
         // sell token based on user choice
-        local feesListing:number := Call.interop<number>("Get",  "GHOST", "_feesListing", $TYPE_OF(number));
-        local feesAddress:number := Call.interop<number>("Get",  "GHOST", "_feesAddress", $TYPE_OF(number));
+        local feesListing:number := Call.contract<number>("GHOST", "getFeesListing", $TYPE_OF(address));
+        local feesAddress:number := Call.contract<number>("GHOST", "getFeesAddress", $TYPE_OF(address));
         Call.contract<none>("Market", "ListToken", creator, mintTicker, listPriceCurrency, tokenID, listPrice, 0, Time.now(), listLastEndDate, 0, 0, feesListing, feesAddress);
     }
 
@@ -573,7 +573,7 @@ token CUST {
         this.mint(isNewSeries, creator, royalties, name, description, nftType, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, editionMode, listPriceCurrency, listPrice, listLastEndDate, lockedContent, numOfNfts, infusedAsset, infusedAmount, hasLocked);
 
         // if feesMultiplier > 0, pay service fees and pay burn fees
-        local feesMultiplier:number := Call.interop<number>("Get",  "GHOST", "_feesMultiplier", $TYPE_OF(number));
+        local feesMultiplier:number := Call.contract<number>("GHOST", "getFeesMultiplier", $TYPE_OF(address));
         if (feesMultiplier > 0)
         {
             this.payFees(numOfNfts, creator, infusedAmount);
