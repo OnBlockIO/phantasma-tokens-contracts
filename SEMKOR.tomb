@@ -157,7 +157,7 @@ token SEMK {
     private feesBase(numOfNfts:number):number
     {
         // calculate fees base
-        local feesMultiplier:number := Call.interop<number>("Get",  "GHOST", "_feesMultiplier", $TYPE_OF(number));
+        local feesMultiplier:number := Call.contract<number>("GHOST", "getFeesMultiplier", $TYPE_OF(number));
         local multiplier:number := 2 * feesMultiplier;
         local feesBase:number := (2 * numOfNfts) + multiplier;
 
@@ -195,7 +195,7 @@ token SEMK {
         local feesTransfer:number := this.feesBase(numOfNfts) * assetDecimals;
 
         // fees payment
-        local feesAddress:address := Call.interop<number>("Get",  "GHOST", "_feesAddress", $TYPE_OF(address));
+        local feesAddress:address := Call.contract<number>("GHOST", "getFeesAddress", $TYPE_OF(address));
         Token.transfer(creator, feesAddress, "KCAL", feesTransfer);
     }
 
@@ -247,7 +247,7 @@ token SEMK {
         }
 
         // if fees multiplier > 0, check if enough for transfer fees
-        local feesMultiplier:number := Call.interop<number>("Get",  "GHOST", "_feesMultiplier", $TYPE_OF(number));
+        local feesMultiplier:number := Call.contract<number>("GHOST", "getFeesMultiplier", $TYPE_OF(number));
         if (feesMultiplier > 0)
         {
             this.checkFees(numOfNfts, creator);
@@ -470,7 +470,7 @@ token SEMK {
         this.mint(isNewSeries, creator, royalties, name, description, nftType, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, editionMode, lockedContent, numOfNfts, hasLocked);
 
         // if feesMultipler > 0, pay service fees
-        local feesMultiplier:number := Call.interop<number>("Get",  "GHOST", "_feesMultiplier", $TYPE_OF(number));
+        local feesMultiplier:number := Call.contract<number>("GHOST", "getFeesMultiplier", $TYPE_OF(number));
         if (feesMultiplier > 0)
         {
             this.payFees(numOfNfts, creator);
