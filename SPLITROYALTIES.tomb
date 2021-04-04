@@ -1,0 +1,59 @@
+struct receiver {
+  target:address;
+  percent:number;
+}
+
+contract split_royalties {
+
+    import List;
+    import Token;
+    import Runtime;
+
+    // global storage for owner address
+    global _addressOwner:address;
+    // global storage for receivers
+    global _receivers: storage_list<receiver>;
+
+    constructor (from:address) {
+
+        _addressOwner:= from;
+        local rec1:receiver := Struct.receiver(@P2KFdcjiC7dsmaY89afsFmJeYewqdEcbmTvDpzxpoAChXjo, 50);
+        local rec2:receiver := Struct.receiver(@P2KHzQ8vYXrrtmB5MkeYAwShWcecTExnRyXcz915Nf9J1GW, 25);
+        local rec3:receiver := Struct.receiver(@P2KKSNBkC18QsCs1MCkeQJVY2jK5LRSVjUKKyCUfqkhvrqf, 25);
+
+        _receivers.add(rec1);
+        _receivers.add(rec2);
+        _receivers.add(rec3);
+    }
+
+    trigger onReceive(from:address, to:address, symbol:string, amount:number)
+    {
+        local indexReceiver:number := 0;
+        local indexTotal:number := 0;
+        local total:number := 0;
+
+        // loop to get total split
+        while (indexTotal < _receivers.count()) {
+            local currentReceiver:receiver := _receivers.get(indexTotal);
+            total += currentReceiver.percent;
+            indexTotal := indexTotal + 1;
+        }
+
+        // loop and send to each
+        while (indexReceiver < _receivers.count()) {
+            local currentReceiver:receiver := _receivers.get(indexReceiver);
+            local temp:number := (amount * currentReceiver.percent) / total;
+            Token.transfer(to, currentReceiver.target, symbol, temp);
+            indexReceiver := indexReceiver + 1;
+        }
+    }
+
+    /// @dev onUpgrade trigger.
+    /// @param from - Address from - address
+    trigger onUpgrade(from:address)
+    {
+        // check is witness and is current owner
+        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
+    }
+
+}
