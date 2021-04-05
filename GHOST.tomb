@@ -48,8 +48,6 @@ token GHOST {
     global _addressOwner:address;
     // global storage for contract address
     global _addressContract:address;
-    // global storage for contract name
-    global _contractName:string;
     // global storage for contract pause
     global _contractPaused:bool;
     // global storage for locked content
@@ -68,7 +66,7 @@ token GHOST {
     global _infuseMultiplier:number;
 
     // token name
-    property name:string = _contractName;
+    property name:string = "GhostMarket";
     // token version
     property version:string = "2.0";
     // token is transferable
@@ -177,7 +175,6 @@ token GHOST {
     {
         _addressOwner:= owner;
         _addressContract:= $THIS_ADDRESS;
-        _contractName:= "GhostMarket NFT";
 		_contractPaused:= false;
 		_feesMultiplier:= 1;
         _feesListing:= 2;
