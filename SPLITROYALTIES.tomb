@@ -1,3 +1,4 @@
+// custom struct for receiver
 struct receiver {
   target:address;
   percent:number;
@@ -5,46 +6,137 @@ struct receiver {
 
 contract split_royalties {
 
+    // librairies import
     import List;
     import Token;
     import Runtime;
+    import Map;
 
     // global storage for owner address
     global _addressOwner:address;
     // global storage for receivers
-    global _receivers: storage_list<receiver>;
+    global _receivers: storage_map<address, number>;
+    // global storage for updatable
+    global _isUpdatable:bool;
 
-    constructor (from:address) {
-
-        _addressOwner:= from;
-        local rec1:receiver := Struct.receiver(@P2KFdcjiC7dsmaY89afsFmJeYewqdEcbmTvDpzxpoAChXjo, 50);
-        local rec2:receiver := Struct.receiver(@P2KHzQ8vYXrrtmB5MkeYAwShWcecTExnRyXcz915Nf9J1GW, 25);
-        local rec3:receiver := Struct.receiver(@P2KKSNBkC18QsCs1MCkeQJVY2jK5LRSVjUKKyCUfqkhvrqf, 25);
-
-        _receivers.add(rec1);
-        _receivers.add(rec2);
-        _receivers.add(rec3);
-    }
-
-    trigger onReceive(from:address, to:address, symbol:string, amount:number)
+    public addReceiver(receiver:address, percent:number)
     {
-        local indexReceiver:number := 0;
-        local indexTotal:number := 0;
-        local total:number := 0;
+        // check is witness and is current owner
+        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
+
+        // check if script is updatable
+        if (_isUpdatable != true)
+        {
+            throw "this script was set as not updatable";
+        }
 
         // loop to get total split
-        while (indexTotal < _receivers.count()) {
+        local indexTotal:number := 0;
+        while (indexTotal < _receivers.count())
+        {
             local currentReceiver:receiver := _receivers.get(indexTotal);
             total += currentReceiver.percent;
             indexTotal := indexTotal + 1;
         }
 
-        // loop and send to each
-        while (indexReceiver < _receivers.count()) {
-            local currentReceiver:receiver := _receivers.get(indexReceiver);
-            local temp:number := (amount * currentReceiver.percent) / total;
-            Token.transfer(to, currentReceiver.target, symbol, temp);
-            indexReceiver := indexReceiver + 1;
+        Runtime.expect(total + percent <= 100, "new royalties split has to be <= 100%");
+
+        // check if receiver does not already exists, then set it
+        if (!_receivers.has(receiver))
+        {
+            _receivers.set(receiver, percent);
+        }
+    }
+
+    public removeReceiver(receiver:address, percent:number)
+    {
+        // check is witness and is current owner
+        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
+
+        // check if script is updatable
+        if (_isUpdatable != true)
+        {
+            throw "this script was set as not updatable";
+        }
+
+        // check if receiver already exists, then remove it
+        if (_receivers.has(receiver))
+        {
+            _receivers.remove(rec);
+        }
+    }
+
+    public editReceiver(receiver:address, percent:number)
+    {
+        // check is witness and is current owner
+        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
+
+        // check if script is updatable
+        if (_isUpdatable != true)
+        {
+            throw "this script was set as not updatable";
+        }
+
+        // loop to get total split
+        local indexTotal:number := 0;
+        while (indexTotal < _receivers.count())
+        {
+            local currentReceiver:receiver := _receivers.get(indexTotal);
+            total += currentReceiver.percent;
+            indexTotal := indexTotal + 1;
+        }
+
+        Runtime.expect(total + percent <= 100, "new royalties split has to be <= 100%");
+
+        // check if receiver already exists, then edit it
+        if (_receivers.has(receiver))
+        {
+            _receivers.set(receiver, percent);
+        }
+    }
+
+    // constructor with owner and all global var
+    constructor (from:address)
+    {
+        _addressOwner:= from;
+        _isUpdatable:= true;
+        this.addReceiver(@P2KFdcjiC7dsmaY89afsFmJeYewqdEcbmTvDpzxpoAChXjo, 50);
+        this.addReceiver(@P2KHzQ8vYXrrtmB5MkeYAwShWcecTExnRyXcz915Nf9J1GW, 25);
+        this.addReceiver(@P2KKSNBkC18QsCs1MCkeQJVY2jK5LRSVjUKKyCUfqkhvrqf, 25);
+    }
+
+    /// @dev Internal method to check if a token is divisible
+    /// @param asset - Asset symbol - string
+    /// @dev Returns bool.
+    private isDivisible(asset:string):bool
+    {
+        // check tokenflag isFungible
+        local flags:TokenFlags := Token.getFlags(asset);
+        if (flags.isSet(TokenFlags.Divisible))
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    trigger onReceive(from:address, to:address, symbol:string, amount:number)
+    {
+        if (this.isDivisible() == true && from == @S3dMxTVPQ66jYV8UmhLRxdphukq9NgMdgHvPWRi7ctVT8QP) // applies only if divisible amount & from market smart contract
+        {
+            // initialize local variables
+            local indexReceiver:number := 0;
+
+            // loop and send to each
+            while (indexReceiver < _receivers.count())
+            {
+                local currentReceiver:receiver := _receivers.get(indexReceiver);
+                local temp:number := (amount * currentReceiver.percent) / 100;
+                Token.transfer(to, currentReceiver.target, symbol, temp);
+                indexReceiver := indexReceiver + 1;
+            }
         }
     }
 
