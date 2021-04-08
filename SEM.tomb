@@ -1,5 +1,5 @@
 /**
- * GHOSTMARKET SEMKOR COLLETION - PHANTASMA SMART CONTRACT
+ * GHOSTMARKET SEMKHOR COLLECTION - PHANTASMA SMART CONTRACT
  */
 
 // customRom struct
@@ -42,7 +42,7 @@ struct customRam
 }
 
 // custom token contract
-token SEMK {
+token SEM {
 
     // global storage for owner address
     global _addressOwner:address;
@@ -52,7 +52,7 @@ token SEMK {
     global _unlockedStorageMap: storage_map<number, number>;
 
     // token name
-    property name:string = "SEMKHOR";
+    property name:string = "Semkhor NFT";
     // token is transferable
     property isTransferable:bool = true;
     // token is not fungible
