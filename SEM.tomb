@@ -52,7 +52,7 @@ token SEM {
     global _unlockedStorageMap: storage_map<number, number>;
 
     // token name
-    property name:string = "Semkhor's NFTS";
+    property name:string = "Semkhor";
     // token is transferable
     property isTransferable:bool = true;
     // token is not fungible
