@@ -352,7 +352,7 @@ token GHOST {
 
         // check name parameter
         Runtime.expect(name.length() >= 3, "invalid char length for name, it should be >= 3, received " + name.length());
-        Runtime.expect(name.length() <= 35, "invalid char length for name, it should be <= 35, received " + name.length());
+        Runtime.expect(name.length() <= 55, "invalid char length for name, it should be <= 55, received " + name.length());
 
         // check description parameter
         Runtime.expect(description.length() >= 10, "invalid char length for description, it should be >= 10, received " + description.length());
@@ -367,21 +367,21 @@ token GHOST {
         // check extended parameters
         if (attributeType1.length() > 0)
         {
-            Runtime.expect(attributeType1.length() <= 25, "invalid extended attributeType1 length, received " + attributeType1.length());
+            Runtime.expect(attributeType1.length() <= 55, "invalid extended attributeType1 length, received " + attributeType1.length());
             Runtime.expect(attributeValue1.length() > 0, "invalid extended attributeValue1 length, received " + attributeValue1.length());
-            Runtime.expect(attributeValue1.length() <= 25, "invalid extended attributeValue1 length, received " + attributeValue1.length());
+            Runtime.expect(attributeValue1.length() <= 55, "invalid extended attributeValue1 length, received " + attributeValue1.length());
         }
         if (attributeType2.length() > 0)
         {
-            Runtime.expect(attributeType2.length() <= 25, "invalid extended attributeType2 length, received " + attributeType2.length());
+            Runtime.expect(attributeType2.length() <= 55, "invalid extended attributeType2 length, received " + attributeType2.length());
             Runtime.expect(attributeValue2.length() > 0, "invalid extended attributeType2 length, received " + attributeValue2.length());
-            Runtime.expect(attributeValue2.length() <= 25, "invalid extended attributeValue2 length, received " + attributeValue2.length());
+            Runtime.expect(attributeValue2.length() <= 55, "invalid extended attributeValue2 length, received " + attributeValue2.length());
         }
         if (attributeType3.length() > 0)
         {
-            Runtime.expect(attributeType3.length() <= 25, "invalid extended attributeType3 length, received " + attributeType3.length());
+            Runtime.expect(attributeType3.length() <= 55, "invalid extended attributeType3 length, received " + attributeType3.length());
             Runtime.expect(attributeValue3.length() > 0, "invalid extended attributeValue3 length, received " + attributeValue3.length());
-            Runtime.expect(attributeValue3.length() <= 25, "invalid extended attributeValue3 length, received " + attributeValue3.length());
+            Runtime.expect(attributeValue3.length() <= 55, "invalid extended attributeValue3 length, received " + attributeValue3.length());
         }
 
         // check lockedContent parameter
@@ -439,7 +439,7 @@ token GHOST {
     private sellToken(creator:address, mintTicker:string, listPriceCurrency:string, tokenID:number, listPrice:number, listLastEndDate:timestamp)
     {
         // sell token based on user choice
-        Call.contract<none>("Market", "ListToken", creator, mintTicker, listPriceCurrency, tokenID, listPrice, 0, Time.now(), listLastEndDate, 0, 0, _feesListing, _feesAddress);
+        Call.contract<none>("market", "ListToken", creator, mintTicker, listPriceCurrency, tokenID, listPrice, 0, Time.now(), listLastEndDate, 0, 0, 2, _feesAddress);
     }
 
     /// @dev Internal method to set the locked content storage map.
