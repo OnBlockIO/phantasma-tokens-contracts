@@ -1,0 +1,97 @@
+// GhostMarket Token.
+
+// Limited supply of 100M tokens.
+// No minting on Phantasma (only swap in/out).
+
+token GM {
+    // Librairies import
+    import Runtime;
+
+    // Global storage
+    global _addressOwner: address;
+    global _contractPaused: bool;
+
+    // Properties
+    property name: string = "GhostMarket Token";
+    property version: string = "1.0";
+    property isTransferable: bool = true;
+    property isFungible: bool = true;
+    property isBurnable: bool = true;
+    property isDivisible: bool = true;
+    property isFinite: bool = true;
+    property maxSupply: number = 10000000000000000; // 100M
+    property decimals: number = 8;
+    property symbol: string = $THIS_SYMBOL;
+    property owner: address = _addressOwner;
+
+    // Constructor with owner and all global var
+    constructor(owner: address) {
+        _addressOwner:= owner;
+        _contractPaused:= false;
+    }
+
+    /// @dev Internal method to check if the contract is paused.
+    /// @dev Returns bool.
+    private checkContractPaused(): bool {
+        // check if contract is paused
+        if (_contractPaused) {
+            return true;
+        }
+        return false;
+    }
+
+
+    /// @dev Update the current token contract owner address to another address.
+    /// @param newOwner - Address of the new owner - address
+    public updateOwner(newOwner:address) {
+        // check is witness and is current owner
+        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
+
+        // set new owner
+        _addressOwner:= newOwner;
+    }
+
+    /// @dev onUpgrade trigger.
+    /// @param from - Address from - address
+    trigger onUpgrade(from: address) {
+        // check is witness and is current owner
+        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
+    }
+
+    /// @dev onMigrate trigger.
+    /// @param from - Address from - address
+    /// @param to - Address to - address
+    trigger onMigrate(from:address, to:address) {
+        // check is current owner
+        if (from == _addressOwner) {
+            _addressOwner := to;
+        }
+    }
+
+    /// @dev onMint trigger.
+    /// @param from - Address from - address
+    /// @param from - Address to - address
+    /// @param from - Symbol - string
+    /// @param from - Amount - number
+    trigger onMint(from: address, to: address, symbol: string, amount: number) {
+        // unused
+    }
+
+    /// @dev onSend trigger.
+    /// @param from - Address from - address
+    /// @param from - Address to - address
+    /// @param from - Symbol - string
+    /// @param from - Amount - number
+    trigger onSend(from: address, to: address, symbol: string, amount: number) {
+        Runtime.expect(this.checkContractPaused() != true, "GM smart contract is currently paused.");
+    }
+
+    /// @dev onReceive trigger.
+    /// @param from - Address from - address
+    /// @param from - Address to - address
+    /// @param from - Symbol - string
+    /// @param from - Amount - number
+    trigger onReceive(from: address, to: address, symbol: string, amount: number) {
+        // unused
+    }
+}
