@@ -62,7 +62,7 @@ token CUST {
     // token has no max supply
     property maxSupply:number = 0;
     // token owner address
-    property addressOwner:address = _addressOwner;
+    property owner:address = _addressOwner;
 
     /// customNft struct
     nft customNft<customRom, customRam> {
@@ -152,76 +152,6 @@ token CUST {
         _addressOwner:= owner;
     }
 
-    /// @dev Internal method to return base fees based on mint quantity
-    /// @param numOfNfts - Quantity of NFT to mint - number
-    /// @dev Returns number.
-    private feesBase(numOfNfts:number):number
-    {
-        // calculate fees base
-        local feesMultiplier:number := Call.contract<number>("GHOST", "getFeesMultiplier", $TYPE_OF(address));
-        local multiplier:number := 8 * feesMultiplier;
-        local feesBase:number := (2 * numOfNfts) + multiplier;
-
-        return feesBase;
-    }
-
-	/// @dev Internal method to check if enough fees based on mint quantity
-    /// @param numOfNfts - Quantity of NFT to mint - number
-	/// @param creator - Address trying to mint - address
-    private checkFees(numOfNfts:number, creator:address)
-    {
-        // calculate asset decimals
-        local assetDecimals:number := 10 ^ Token.getDecimals("KCAL");
-
-        // current balance
-        local balance:number := Token.getBalance(creator, "KCAL");
-
-        // calculate required fees
-        local feesRequired:number := this.feesBase(numOfNfts) * 2 * assetDecimals;
-
-        // calculate missing fees
-        local feesMissing:number := (feesRequired - balance) / assetDecimals;
-		Runtime.expect(feesMissing < 0, "not enough fees to pay for this mint transaction, requires " + feesMissing + " more KCAL");
-    }
-
-	/// @dev Internal method to pay fees based on mint quantity
-    /// @param numOfNfts - Quantity of NFT to mint - number
-	/// @param creator - Address trying to mint - address
-    /// @param infusedAmount - NFT infuse amount - number
-    private payFees(numOfNfts:number, creator:address, infusedAmount:number)
-    {
-        // calculate asset decimals
-		local assetDecimals:number := 10 ^ Token.getDecimals("KCAL");
-
-        // calculate fees base
-		local feesBaseResult:number := this.feesBase(numOfNfts);
-
-        // calculate fees infuse
-        local infuseMultiplier:number := Call.contract<number>("GHOST", "getInfuseMultiplier", $TYPE_OF(address));
-		local feesInfuse:number := infuseMultiplier * numOfNfts;
-
-        // calculate fees minus infuse, if any
-        local feesTransfer:number;
-        if (infusedAmount > 0)
-        {
-            feesTransfer := feesBaseResult * assetDecimals;
-        }
-        else
-        {
-            feesTransfer := (feesBaseResult - feesInfuse) * assetDecimals;
-        }
-
-        // calculate fees burn
-        local feesBurn:number := feesBaseResult * assetDecimals;
-
-        // fees payment
-        local feesAddress:address := Call.contract<number>("GHOST", "getFeesAddress", $TYPE_OF(address));
-        Token.transfer(creator, feesAddress, "KCAL", feesTransfer);
-
-        // fees burn
-		Token.burn(creator, "KCAL", feesBurn);
-    }
-
     /// @dev Internal method to check if a token is a NFT
     /// @param asset - Asset symbol - string
     /// @dev Returns bool.
@@ -267,13 +197,6 @@ token CUST {
         if (editionMode == 2)
         {
             Runtime.expect(numOfNfts == 1, "invalid number for numOfNfts on unique mode series, it should be 1 max, received " + numOfNfts);
-        }
-
-        // if fees multiplier > 0, check if enough for transfer fees and burn fees
-        local feesMultiplier:number := Call.contract<number>("GHOST", "getFeesMultiplier", $TYPE_OF(address));
-        if (feesMultiplier > 0)
-        {
-            this.checkFees(numOfNfts, creator);
         }
 
         // check mintTicker parameter
@@ -572,12 +495,6 @@ token CUST {
         // mint tokens
         this.mint(isNewSeries, creator, royalties, name, description, nftType, imageURL, infoURL, attributeType1, attributeValue1, attributeType2, attributeValue2, attributeType3, attributeValue3, mintTicker, editionId, editionMode, listPriceCurrency, listPrice, listLastEndDate, lockedContent, numOfNfts, infusedAsset, infusedAmount, hasLocked);
 
-        // if feesMultiplier > 0, pay service fees and pay burn fees
-        local feesMultiplier:number := Call.contract<number>("GHOST", "getFeesMultiplier", $TYPE_OF(address));
-        if (feesMultiplier > 0)
-        {
-            this.payFees(numOfNfts, creator, infusedAmount);
-        }
     }
 
     /// @dev Get locked content of a specific pair symbol/nftid.
