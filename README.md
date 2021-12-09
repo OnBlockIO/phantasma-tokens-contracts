@@ -1,10 +1,11 @@
-# GhostMarket NFT PEPE12 Contract
+# GhostMarket Smart Contracts
 ## Audit
 
 Coming soon...
 ## Technical Information
 
-Upgradable PEPE12 Contract.
+NFT Contract.
+FT Contract.
 
 
 ## Testing
