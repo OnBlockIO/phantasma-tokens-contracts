@@ -1,5 +1,5 @@
 /**
- * ALKS CUSTOM COLLECTION - PHANTASMA SMART CONTRACT
+ * SOULASMA CUSTOM COLLECTION - PHANTASMA SMART CONTRACT
  */
 
 // customRom struct
@@ -42,7 +42,7 @@ struct customRam
 }
 
 // custom token contract
-token ALKA {
+token SMNFT {
 
     // global storage for owner address
     global _addressOwner:address;
@@ -52,7 +52,7 @@ token ALKA {
     global _unlockedStorageMap: storage_map<number, number>;
 
     // token name
-    property name:string = "ALKS CUSTOM CONTRACT";
+    property name:string = "SOULASMA CUSTOM CONTRACT";
     // token is transferable
     property isTransferable:bool = true;
     // token is not fungible
