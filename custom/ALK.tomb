@@ -374,9 +374,6 @@ token ALKA {
     /// @param hasLocked - Locked content stored in contract - bool
     private mint(isNewSeries:bool, creator:address, royalties:number, name:string, description:string, nftType:number, imageURL:string, infoURL:string, attributeType1:string, attributeValue1:string, attributeType2:string, attributeValue2:string, attributeType3:string, attributeValue3:string, mintTicker:string, editionId:number, editionMode:number, listPriceCurrency:string, listPrice:number, listLastEndDate:timestamp, lockedContent:string, numOfNfts:number, infusedAsset:string, infusedAmount:number, hasLocked:bool)
     {
-        // check is witness and is current owner
-        Runtime.expect(Runtime.isWitness(_addressOwner), "invalid witness");
-
         // mint numOfNfts NFT
         while (numOfNfts > 0) {
 
