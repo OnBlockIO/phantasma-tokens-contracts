@@ -309,7 +309,7 @@ token SMNFT {
         // sell token based on user choice
         local feesListing:number := Call.contract<number>("GHOST", "getFeesListing", $TYPE_OF(address));
         local feesAddress:number := Call.contract<number>("GHOST", "getFeesAddress", $TYPE_OF(address));
-        Call.contract<none>("Market", "ListToken", creator, mintTicker, listPriceCurrency, tokenID, listPrice, 0, Time.now(), listLastEndDate, 0, 0, feesListing, feesAddress);
+        Call.contract<none>("market", "ListToken", creator, mintTicker, listPriceCurrency, tokenID, listPrice, 0, Time.now(), listLastEndDate, 0, 0, feesListing, feesAddress);
     }
 
     /// @dev Internal method to set the locked content storage map.
